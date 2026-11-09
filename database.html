@@ -101,6 +101,7 @@ td.wrapcell{white-space:normal;min-width:180px;max-width:280px}
 .s-in-use{background:var(--use-soft);color:var(--use)}
 .s-repair{background:var(--warn-soft);color:var(--warn)}
 .s-retired{background:var(--off-soft);color:var(--off)}
+.s-disposed{background:var(--off-soft);color:var(--danger)}
 .flag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;background:var(--warn-soft);color:var(--warn)}
 tfoot td{position:sticky;bottom:0;background:var(--head);font-weight:700;padding:14px;border-top:2px solid var(--ink);white-space:nowrap}
 .empty{padding:56px 24px;text-align:center;color:var(--muted)}
@@ -220,7 +221,7 @@ const SUPABASE_KEY = "sb_publishable_RioLcLmP4qQxil5OXO8p-A_OjD9lY5D";
 const PHOTO_BUCKET = "asset-photos";
 const COLS_KEY = "asset-db-columns-v1";
 
-const STATUS = { "available":"Available", "in-use":"In use", "repair":"In repair", "retired":"Retired" };
+const STATUS = { "available":"Available", "in-use":"In use", "repair":"In repair", "retired":"Retired", "disposed":"Disposed" };
 const CAT_ICONS = {
   "IT / Electronics":"💻", "Communication Equipment":"📱", "Office Equipment":"🖨️", "Audio / Visual":"📺",
   "Appliances":"🔌", "Kitchen Equipment":"🍳", "Furniture":"🪑", "Vehicles / Transportation":"🚚",
@@ -254,6 +255,7 @@ const COLS = [
   { k:"category", label:"Category", render:a => a.category ? '<span class="cat"><span class="ic" aria-hidden="true">'+(CAT_ICONS[a.category] || "📦")+'</span>'+esc(a.category)+'</span>' : "" },
   { k:"subcategory", label:"Sub-category" },
   { k:"location", label:"Location" },
+  { k:"actualLocation", label:"Actual location" },
   { k:"department", label:"Department", hidden:true },
   { k:"assignee", label:"Assigned to" },
   { k:"status", label:"Status", text:a => STATUS[a.status] || "", render:a => a.status ? '<span class="pill s-'+esc(a.status)+'">'+esc(STATUS[a.status] || a.status)+'</span>' : "" },
@@ -402,7 +404,7 @@ $("#exportBtn").addEventListener("click", () => {
 /* ---------- Import (CSV / Excel) ---------- */
 const IMPORT_FIELDS = [
   ["","Don’t import"],["id","ID"],["property","Property"],["name","Asset name"],["manufacturer","Brand"],["model","Model"],["serial","Serial #"],
-  ["category","Category"],["subcategory","Sub-category"],["location","Location"],["department","Department"],["assignee","Assigned to"],
+  ["category","Category"],["subcategory","Sub-category"],["location","Location"],["actualLocation","Actual location"],["department","Department"],["assignee","Assigned to"],
   ["status","Status"],["condition","Condition"],["purchaseDate","Purchase date"],["supplier","Supplier"],["invoice","Invoice / PO"],
   ["value","Cost"],["usefulLife","Useful life (years)"],["warrantyEnd","Warranty ends"],["lastService","Last service"],["nextService","Next service"],["notes","Notes"]
 ];
@@ -410,7 +412,7 @@ const SYN = {
   id:["id","asset id","asset no","asset number","asset tag","tag","tag no"], property:["property","site","branch","hotel","resort"],
   name:["asset name","name","item","item name","description","asset"], manufacturer:["brand","manufacturer","make"], model:["model","model no"],
   serial:["serial","serial no","serial number","s n","sn"], category:["category","type","asset type"], subcategory:["sub category","subcategory"],
-  location:["location","room","area"], department:["department","dept"], assignee:["assigned to","assignee","custodian","user","issued to"],
+  location:["location","room","area"], actualLocation:["actual location","exact location","specific location","spot","sub location"], department:["department","dept"], assignee:["assigned to","assignee","custodian","user","issued to"],
   status:["status"], condition:["condition"], purchaseDate:["purchase date","date purchased","date acquired","acquired","purchased","acquisition date"],
   supplier:["supplier","vendor"], invoice:["invoice","po","invoice po","invoice no","po no","po number","invoice or po"],
   value:["cost","value","price","purchase cost","amount","unit cost","acquisition cost"], usefulLife:["useful life","useful life years","life years"],
@@ -468,12 +470,13 @@ function toISODate(v){
 function toStatus(v){
   v = String(v || "").toLowerCase();
   if(!v) return "available";
-  if(/retir|dispos|lost|stolen|written|scrap/.test(v)) return "retired";
+  if(/dispos|sold|scrap|written|donat/.test(v)) return "disposed";
+  if(/retir|lost|stolen/.test(v)) return "retired";
   if(/repair|maint|broken|defect|service/.test(v)) return "repair";
   if(/use|assign|deploy|issued|checked out/.test(v)) return "in-use";
   return "available";
 }
-function toCondition(v){ v = String(v || "").trim(); const k = ["New","Good","Fair","Poor","Damaged"].find(c => c.toLowerCase() === v.toLowerCase()); return k || v; }
+function toCondition(v){ v = String(v || "").trim(); const k = ["New","Good","Fair","Poor","Damaged","Disposed"].find(c => c.toLowerCase() === v.toLowerCase()); return k || v; }
 function toNumber(v){ v = String(v || "").replace(/[^0-9.\-]/g, ""); if(v === "" || v === "-" || v === ".") return ""; const n = Number(v); return isNaN(n) ? null : n; }
 function normalizeId(text){ const m = /\b([A-Za-z]{2,5})-(\d{1,6})\b/.exec(String(text || "").trim()); return m ? "Asset-" + String(parseInt(m[2], 10)).padStart(3, "0") : null; }
 
@@ -534,7 +537,6 @@ function buildImport(){
     if(!id){ max += 1; id = "Asset-" + String(max).padStart(3, "0"); }
     seen.add(id);
     if(!data.status) data.status = "available";
-    if(data.status !== "in-use"){ if(data.status !== "available") data.assignee = ""; }
     const rec = Object.assign({ createdAt:Date.now(), updatedAt:Date.now(), history:[{ t:Date.now(), text:"Imported from " + imp.file.name, by:myName }] }, data);
     fresh.push({ id, data: rec });
   });

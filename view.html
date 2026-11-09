@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Asset details</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#EDF0F2; --surface:#FFFFFF; --surface-2:#F5F7F8; --ink:#1C2430; --muted:#5E6A77; --line:#D5DBE0;
+  --accent:#1F5FD1; --accent-soft:#E3ECFB; --panel:#18202A;
+  --ok:#1E7A4C; --ok-soft:#DDF1E6; --use:#1F5FD1; --use-soft:#E3ECFB;
+  --warn:#9A5B00; --warn-soft:#FBEBCF; --off:#6B7480; --off-soft:#E6E9EC; --danger:#B42318; --danger-soft:#FDE7E5;
+  --font:"Archivo", "Helvetica Neue", Arial, system-ui, sans-serif;
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#161C23; --surface:#1F2731; --surface-2:#252E39; --ink:#E7ECF1; --muted:#9AA6B3; --line:#33404D;
+    --accent:#6E9BF0; --accent-soft:#22324C; --panel:#0F141A;
+    --ok:#5CC991; --ok-soft:#1C3A2B; --use:#7FA6F2; --use-soft:#22324C;
+    --warn:#E8B04F; --warn-soft:#3D3019; --off:#9AA3AD; --off-soft:#2C343E; --danger:#F07467; --danger-soft:#3E201E;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#161C23; --surface:#1F2731; --surface-2:#252E39; --ink:#E7ECF1; --muted:#9AA6B3; --line:#33404D;
+  --accent:#6E9BF0; --accent-soft:#22324C; --panel:#0F141A;
+  --ok:#5CC991; --ok-soft:#1C3A2B; --use:#7FA6F2; --use-soft:#22324C;
+  --warn:#E8B04F; --warn-soft:#3D3019; --off:#9AA3AD; --off-soft:#2C343E; --danger:#F07467; --danger-soft:#3E201E;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+
+.head{background:var(--panel);color:#E7ECF1;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 74px;position:relative;overflow:hidden}
+.head::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 31px,rgba(255,255,255,.035) 31px 32px),repeating-linear-gradient(90deg,transparent 0 31px,rgba(255,255,255,.035) 31px 32px);pointer-events:none}
+.head-in{position:relative;max-width:560px;margin:0 auto}
+.brandline{display:flex;align-items:center;gap:8px;font-size:13px;color:#9AA6B3;font-weight:600}
+.brandline .dot{width:8px;height:8px;border-radius:50%;background:#5CC991}
+.aid{margin:10px 0 2px;font-size:44px;line-height:1;font-weight:800;font-stretch:62%;letter-spacing:.01em}
+.aname{margin:0;font-size:20px;font-weight:600;color:#DCE3EA;word-break:break-word}
+
+.wrap{max-width:560px;margin:-56px auto 0;padding:0 14px calc(28px + env(safe-area-inset-bottom,0px));position:relative}
+.photo{display:block;width:100%;height:260px;padding:0;border:0;border-radius:16px;overflow:hidden;background:var(--surface);box-shadow:0 10px 30px rgba(0,0,0,.18);cursor:zoom-in;position:relative}
+.photo img{width:100%;height:100%;object-fit:contain;display:block;background:var(--surface)}
+.photo .hint{position:absolute;right:10px;bottom:10px;display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:rgba(10,14,20,.72);color:#fff;font-size:13px;font-weight:600}
+.photo .hint svg{width:15px;height:15px}
+.nophoto{height:120px;border-radius:16px;background:var(--surface);border:1px dashed var(--line);display:grid;place-items:center;color:var(--muted);box-shadow:0 10px 30px rgba(0,0,0,.08)}
+
+.status{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px}
+.pill{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 13px;border-radius:999px;font-size:14px;font-weight:700}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.s-available{background:var(--ok-soft);color:var(--ok)}
+.s-in-use{background:var(--use-soft);color:var(--use)}
+.s-repair{background:var(--warn-soft);color:var(--warn)}
+.s-retired{background:var(--off-soft);color:var(--off)}
+.s-disposed{background:var(--danger-soft);color:var(--danger)}
+.pill.plain{background:var(--surface);color:var(--muted);border:1px solid var(--line)}
+.pill.plain::before{display:none}
+
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-top:12px;overflow:hidden}
+.sec h2{margin:0;padding:12px 16px 10px;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.sec dl{margin:0}
+.sec .row{display:grid;grid-template-columns:132px minmax(0,1fr);gap:12px;padding:11px 16px;border-top:1px solid var(--line)}
+.sec .row:first-child{border-top:0}
+.sec dt{color:var(--muted);font-size:15px}
+.sec dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.sec dd.none{color:var(--muted);font-weight:400}
+@media (max-width:360px){.sec .row{grid-template-columns:1fr;gap:2px}}
+
+.foot{margin-top:18px;text-align:center;color:var(--muted);font-size:14px}
+.foot p{margin:0 0 12px}
+.staff{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;font-weight:600}
+.staff:hover{border-color:var(--muted)}
+
+.state{max-width:440px;margin:60px auto;padding:28px 22px;text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:16px}
+.state h1{margin:0 0 8px;font-size:26px;font-weight:800;font-stretch:75%}
+.state p{margin:0 0 6px;color:var(--muted)}
+.spin{width:28px;height:28px;margin:0 auto 14px;border:3px solid var(--accent);border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.lb{position:fixed;inset:0;z-index:50;background:#0B0F14;display:flex;flex-direction:column}
+.lb-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;color:#fff}
+.lb-bar b{font-stretch:75%;font-size:18px}
+.lb-bar button{height:40px;padding:0 16px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font-weight:600;cursor:pointer}
+.lb-stage{flex:1;overflow:auto;display:flex;padding:8px 10px calc(14px + env(safe-area-inset-bottom,0px))}
+.lb-stage img{margin:auto;max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in}
+.lb-stage.zoomed img{max-width:none;max-height:none;cursor:zoom-out}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2s}}
+</style>
+</head>
+<body>
+<div id="loading" class="state" role="status"><div class="spin" aria-hidden="true"></div><h1>Opening asset…</h1><p>Reading the tag details.</p></div>
+<div id="error" class="state" hidden role="alert"><h1 id="errTitle"></h1><p id="errMsg"></p><p style="margin-top:14px"><a class="staff" href="login.html">Staff sign in</a></p></div>
+
+<main id="page" hidden>
+  <header class="head"><div class="head-in">
+    <div class="brandline"><span class="dot" aria-hidden="true"></span><span id="owner"></span></div>
+    <h1 class="aid" id="aid"></h1>
+    <p class="aname" id="aname"></p>
+  </div></header>
+  <div class="wrap">
+    <div id="photoBox"></div>
+    <div class="status" id="statusRow"></div>
+    <section class="sec" aria-labelledby="h1"><h2 id="h1">Identification</h2><dl id="secId"></dl></section>
+    <section class="sec" aria-labelledby="h2"><h2 id="h2">Asset details</h2><dl id="secDet"></dl></section>
+    <section class="sec" aria-labelledby="h3"><h2 id="h3">Location &amp; assignment</h2><dl id="secLoc"></dl></section>
+    <section class="sec" aria-labelledby="h4"><h2 id="h4">Status</h2><dl id="secStat"></dl></section>
+    <div class="foot">
+      <p id="returnNote"></p>
+      <a class="staff" id="staffLink" href="login.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Staff: sign in for the full record</a>
+    </div>
+  </div>
+</main>
+
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Asset photo">
+  <div class="lb-bar"><b id="lbCap"></b><span><button type="button" id="lbZoom">Zoom in</button> <button type="button" id="lbClose">Close</button></span></div>
+  <div class="lb-stage" id="lbStage"><img id="lbImg" alt=""></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const SUPABASE_URL = "https://etiqbblpenjqdkkmdbjm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_RioLcLmP4qQxil5OXO8p-A_OjD9lY5D";
+const STATUS = { "available":"Available", "in-use":"In use", "repair":"In repair", "retired":"Retired", "disposed":"Disposed" };
+const CAT_ICONS = { "IT / Electronics":"💻", "Communication Equipment":"📱", "Office Equipment":"🖨️", "Audio / Visual":"📺", "Appliances":"🔌", "Kitchen Equipment":"🍳", "Furniture":"🪑", "Vehicles / Transportation":"🚚", "Tools / Equipment":"🔧", "Housekeeping":"🧹" };
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const code = (new URLSearchParams(location.search).get("c") || "").trim().toLowerCase();
+
+function fail(title, msg){ $("#loading").hidden = true; $("#page").hidden = true; $("#errTitle").textContent = title; $("#errMsg").textContent = msg; $("#error").hidden = false; document.title = title; }
+const row = (label, value) => '<div class="row"><dt>'+esc(label)+'</dt>'+(value ? '<dd>'+value+'</dd>' : '<dd class="none">Not set</dd>')+'</div>';
+
+function show(a, org){
+  document.title = a.id + " · " + (a.name || "Asset");
+  const owner = a.property || org;
+  $("#owner").textContent = owner ? "Property of " + owner : "Asset tag";
+  $("#aid").textContent = a.id; $("#aname").textContent = a.name || "";
+  $("#photoBox").innerHTML = a.photoUrl
+    ? '<button type="button" class="photo" id="photoBtn" aria-label="Enlarge photo"><img src="'+esc(a.photoUrl)+'" alt="Photo of '+esc(a.name || a.id)+'"><span class="hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>Enlarge</span></button>'
+    : '<div class="nophoto">No photo</div>';
+  const st = a.status || "";
+  $("#statusRow").innerHTML = (st ? '<span class="pill s-'+esc(st)+'">'+esc(STATUS[st] || st)+'</span>' : '') + (a.condition && a.condition.toLowerCase() !== String(STATUS[st] || st).toLowerCase() ? '<span class="pill plain">'+esc(a.condition)+' condition</span>' : '');
+  $("#secId").innerHTML = row("Asset ID", esc(a.id)) + row("Asset name", esc(a.name)) +
+    row("Category", a.category ? (CAT_ICONS[a.category] ? CAT_ICONS[a.category] + " " : "") + esc(a.category) : "") + row("Sub-category", esc(a.subcategory));
+  $("#secDet").innerHTML = row("Brand", esc(a.brand)) + row("Model", esc(a.model)) + row("Serial number", esc(a.serial));
+  $("#secLoc").innerHTML = row("Property", esc(a.property)) + row("Location", esc(a.location)) + row("Actual location", esc(a.actualLocation)) +
+    row("Department", esc(a.department)) + row("Assigned to", esc(a.assignee));
+  $("#secStat").innerHTML = row("Status", esc(STATUS[st] || st)) + row("Condition", esc(a.condition));
+  const gone = st === "disposed" || st === "retired";
+  $("#returnNote").textContent = gone ? "This item is no longer in service." : owner ? "Found this item? Please return it to " + owner + (a.location ? " (" + a.location + ")" : "") + "." : "";
+  $("#staffLink").href = "login.html?next=" + encodeURIComponent(a.id) + "&scan=1";
+  $("#loading").hidden = true; $("#page").hidden = false;
+  if(a.photoUrl){
+    $("#photoBtn").addEventListener("click", () => { $("#lbImg").src = a.photoUrl; $("#lbImg").alt = "Photo of " + (a.name || a.id); $("#lbCap").textContent = a.id; $("#lbStage").classList.remove("zoomed"); $("#lbImg").style.width = ""; $("#lbZoom").textContent = "Zoom in"; $("#lb").hidden = false; $("#lbClose").focus(); });
+  }
+}
+function zoom(ev){
+  const img = $("#lbImg"), st = $("#lbStage");
+  if(st.classList.contains("zoomed")){ st.classList.remove("zoomed"); img.style.width = ""; $("#lbZoom").textContent = "Zoom in"; return; }
+  const r = img.getBoundingClientRect(), fx = ev && ev.clientX ? (ev.clientX - r.left) / r.width : .5, fy = ev && ev.clientY ? (ev.clientY - r.top) / r.height : .5;
+  st.classList.add("zoomed"); img.style.width = Math.max(img.naturalWidth, r.width * 2.5) + "px"; $("#lbZoom").textContent = "Fit to screen";
+  requestAnimationFrame(() => { st.scrollLeft = fx * img.offsetWidth - st.clientWidth / 2; st.scrollTop = fy * img.offsetHeight - st.clientHeight / 2; });
+}
+$("#lbImg").addEventListener("click", e => zoom(e));
+$("#lbZoom").addEventListener("click", () => zoom());
+const closeLb = () => { $("#lb").hidden = true; const b = $("#photoBtn"); if(b) b.focus(); };
+$("#lbClose").addEventListener("click", closeLb);
+$("#lbStage").addEventListener("click", e => { if(e.target.id === "lbStage") closeLb(); });
+document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("#lb").hidden) closeLb(); });
+
+// Signed-in staff go straight to the full record with all actions
+async function staffRedirect(id){
+  try{
+    if(!window.supabase) return false;
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const session = (await sb.auth.getSession()).data.session; if(!session) return false;
+    const ok = await sb.rpc("is_staff"); if(ok.error || !ok.data) return false;
+    location.replace("index.html?scan#" + encodeURIComponent(id)); return true;
+  }catch(e){ return false; }
+}
+
+async function start(){
+  if(!/^[a-z0-9]{12,32}$/.test(code)){ fail("This tag isn’t recognized", "The QR code doesn’t contain a valid asset link. If the label is old, ask staff to reprint it."); return; }
+  let res, body = {};
+  try{
+    res = await fetch(SUPABASE_URL + "/functions/v1/asset-public", { method:"POST", headers:{ "Content-Type":"application/json", "apikey":SUPABASE_KEY, "Authorization":"Bearer " + SUPABASE_KEY }, body: JSON.stringify({ code }) });
+    body = await res.json().catch(() => ({}));
+  }catch(e){ fail("Can’t load this asset", "Check your internet connection, then scan the tag again."); return; }
+  if(res.status === 404){ fail("Asset not found", "This tag isn’t linked to any asset. It may have been deleted, or the label was replaced."); return; }
+  if(!res.ok || !body.asset){ fail("Can’t load this asset", "Something went wrong. Please try again in a moment."); return; }
+  if(await staffRedirect(body.asset.id)) return;
+  show(body.asset, body.org || "");
+}
+start();
+})();
+</script>
+</body>
+</html>

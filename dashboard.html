@@ -76,13 +76,13 @@ select{height:42px;padding:0 12px;border:1px solid var(--line);border-radius:8px
 .card h2 small{font-size:13px;font-weight:500;color:var(--muted);font-stretch:100%}
 .stack{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--track);margin-bottom:14px}
 .stack span{display:block;height:100%}
-.legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}
 @media (max-width:560px){.legend{grid-template-columns:1fr 1fr}}
 .legend div{display:flex;flex-direction:column;padding:10px 12px;border-radius:8px;background:var(--surface-2)}
 .legend .lab{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);font-weight:600}
 .legend .lab i{width:9px;height:9px;border-radius:50%;display:inline-block}
 .legend b{font-size:24px;font-stretch:72%;font-variant-numeric:tabular-nums}
-.c-available{background:var(--ok)} .c-in-use{background:var(--use)} .c-repair{background:var(--warn)} .c-retired{background:var(--off)}
+.c-available{background:var(--ok)} .c-in-use{background:var(--use)} .c-repair{background:var(--warn)} .c-retired{background:var(--off)} .c-disposed{background:var(--danger)}
 
 .bars{display:flex;flex-direction:column;gap:12px}
 .bar .row{display:flex;justify-content:space-between;gap:10px;font-size:14px;margin-bottom:5px}
@@ -173,7 +173,8 @@ tr:last-child td{border-bottom:0}
 "use strict";
 const SUPABASE_URL = "https://etiqbblpenjqdkkmdbjm.supabase.co";
 const SUPABASE_KEY = "sb_publishable_RioLcLmP4qQxil5OXO8p-A_OjD9lY5D";
-const STATUS = [["available","Available"],["in-use","In use"],["repair","In repair"],["retired","Retired"]];
+const STATUS = [["available","Available"],["in-use","In use"],["repair","In repair"],["retired","Retired"],["disposed","Disposed"]];
+const inactive = st => st === "retired" || st === "disposed";
 const CAT_ICONS = { "IT / Electronics":"💻", "Communication Equipment":"📱", "Office Equipment":"🖨️", "Audio / Visual":"📺", "Appliances":"🔌", "Kitchen Equipment":"🍳", "Furniture":"🪑", "Vehicles / Transportation":"🚚", "Tools / Equipment":"🔧", "Housekeeping":"🧹" };
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -199,7 +200,7 @@ function bookValue(a){
   return Math.max(0, Number(a.value) * (1 - yrs / Number(a.usefulLife)));
 }
 function issues(a){
-  const out = []; if(a.status === "retired") return out;
+  const out = []; if(inactive(a.status)) return out;
   const due = daysUntil(a.dueDate);
   if(a.status === "in-use" && due != null && due < 0) out.push({ sev:0, text:"Return overdue " + pl(-due,"day") + (a.assignee ? " · " + a.assignee : "") });
   const s = daysUntil(a.nextService);
@@ -218,7 +219,7 @@ function render(){
   $("#fProp").innerHTML = '<option value="">All properties</option>' + props.map(p => '<option'+(p === prop ? ' selected' : '')+'>'+esc(p)+'</option>').join("");
   $("#fProp").hidden = props.length < 2 && !prop;
   const list = assets.filter(a => !prop || a.property === prop);
-  const active = list.filter(a => a.status !== "retired");
+  const active = list.filter(a => !inactive(a.status));
   const cost = list.reduce((s, a) => s + (hasVal(a.value) ? Number(a.value) : 0), 0);
   const value = active.reduce((s, a) => s + bookValue(a), 0);
   const att = list.map(a => ({ a, iss: issues(a) })).filter(x => x.iss.length);
@@ -247,7 +248,7 @@ function render(){
 
   // Properties
   const pr = {};
-  assets.forEach(a => { const p = a.property || "No property set"; pr[p] = pr[p] || { n:0, use:0, cost:0, val:0 }; pr[p].n++; if(a.status === "in-use") pr[p].use++; pr[p].cost += hasVal(a.value) ? Number(a.value) : 0; if(a.status !== "retired") pr[p].val += bookValue(a); });
+  assets.forEach(a => { const p = a.property || "No property set"; pr[p] = pr[p] || { n:0, use:0, cost:0, val:0 }; pr[p].n++; if(a.status === "in-use") pr[p].use++; pr[p].cost += hasVal(a.value) ? Number(a.value) : 0; if(!inactive(a.status)) pr[p].val += bookValue(a); });
   const prRows = Object.entries(pr).sort((x,y) => y[1].n - x[1].n);
   $("#propCard").hidden = prop !== "" || !prRows.length;
   $("#props").innerHTML = '<thead><tr><th>Property</th><th class="num">Assets</th><th class="num">In use</th><th class="num">Cost</th><th class="num">Current value</th></tr></thead><tbody>' +
@@ -259,7 +260,7 @@ function render(){
   $("#alerts").innerHTML = att.length ? att.slice(0, 12).map(({a, iss}) => '<li><a href="'+link(a.id)+'"><span class="id">'+esc(a.id)+'</span><span class="what">'+esc(a.name)+'<small>'+esc(iss.map(i => i.text).join(" · "))+'</small></span><span class="tagw">'+esc(iss[0].sev === 0 ? "Overdue" : iss[0].sev === 1 ? "Due soon" : "Repair")+'</span></a></li>').join("") : '<li class="empty">Nothing overdue or due soon.</li>';
 
   // Warranties
-  const w = list.map(a => ({ a, d: daysUntil(a.warrantyEnd) })).filter(x => x.a.status !== "retired" && x.d != null && x.d >= 0 && x.d <= 90).sort((x,y) => x.d - y.d);
+  const w = list.map(a => ({ a, d: daysUntil(a.warrantyEnd) })).filter(x => !inactive(x.a.status) && x.d != null && x.d >= 0 && x.d <= 90).sort((x,y) => x.d - y.d);
   $("#warranty").innerHTML = w.length ? w.slice(0, 10).map(({a, d}) => '<li><a href="'+link(a.id)+'"><span class="id">'+esc(a.id)+'</span><span class="what">'+esc(a.name)+'<small>Ends '+esc(fmtDay(a.warrantyEnd))+'</small></span><span class="when">'+(d === 0 ? "today" : "in " + pl(d,"day"))+'</span></a></li>').join("") : '<li class="empty">No warranties end in the next 90 days.</li>';
 
   // Activity

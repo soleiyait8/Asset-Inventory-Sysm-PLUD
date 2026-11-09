@@ -27,16 +27,20 @@ All modules share a left side panel (`shell.js`, `shell.css`) with links to each
 - **Settings** (`settings.html`): the organization name, the list of **properties** (with optional address) and the **locations** inside each property. Renaming a property or location updates every asset that uses it; a property or location that still has assets can’t be deleted. The asset form’s Property and Location fields are dropdowns built from these lists, and choosing a property narrows the locations to that property.
 - **Database** (`database.html`): every asset in one wide table with photo thumbnails. Search across all columns; filter by property, category, location, and status; click any column header to sort; choose which columns to show; see totals for cost and current value; export exactly what’s shown to CSV; **import** assets from a CSV or Excel file (columns are matched automatically, with a preview before saving; download a template from the import window). Click a row to open that asset in the Register.
 
-Each asset can have a **property** (e.g. Virgin Beach Resort, Z Hostel), **category** and **sub-category**, **brand**, and a **photo**. Photos are resized in the browser and stored privately in Supabase Storage; only signed-in staff can see them. An asset’s QR tag prints “Property of” its property.
+Each asset can have a **property**, a **location** and an **actual location** (the exact spot, e.g. PAV 1), (e.g. Virgin Beach Resort, Z Hostel), **category** and **sub-category**, **brand**, and a **photo**. Photos are resized in the browser and stored privately in Supabase Storage; only signed-in staff can see them. An asset’s QR tag prints “Property of” its property.
 
 ## Scanning QR tags
 
-Each asset’s QR code contains a link to that asset, for example
-`https://soleiyait8.github.io/Asset-Inventory-Sysm-PLUD/?scan#Asset-001`.
+Each QR tag links to a **public asset page** (`view.html`) using a random code, for example
+`https://soleiyait8.github.io/Asset-Inventory-Sysm-PLUD/view.html?c=4f9a1c2e7b3d8a60`.
 
-- **Any phone camera** can scan a tag: tapping the link opens the asset’s full record, photo and QR included. Signed-out phones go to the login page first and then straight to the scanned asset; after that the phone stays signed in.
-- **Inside the app**, *Scan tag* reads the same codes (older tags that contain only an ID like `AST-0001` still work).
-- If the app ever moves to a different web address, update `PUBLIC_URL` in `index.html` and reprint the labels.
+- **Anyone can scan, no login needed.** The page shows the photo (tap to enlarge) and four sections: Identification (ID, name, category, sub-category), Asset details (brand, model, serial number), Location & assignment (property, location, actual location, department, assigned to) and Status (status, condition).
+- **Never shown publicly:** cost, current value, supplier, invoice/PO, notes, dates and history.
+- **Why a random code:** asset IDs are sequential, so links using only the ID could be guessed to read every asset. The code means only someone holding the physical tag can open it. Codes are created automatically and are served by the `asset-public` Edge Function.
+- **Staff who are signed in** are taken straight to the full record with all actions. Others see a “Staff: sign in for the full record” button.
+- **Inside the app**, *Scan tag* reads new tags, older ID-only tags and typed IDs.
+- Tags printed before the public page was added link to the staff record and need signing in; reprint them to get the public page.
+- If the app moves to a different web address, update `PUBLIC_URL` in `index.html` and reprint the labels.
 
 ## How it works
 

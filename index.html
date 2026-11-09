@@ -160,6 +160,7 @@ select.field-select{height:40px;padding:0 10px;border:1px solid var(--line);bord
 .s-in-use{background:var(--use-soft);color:var(--use)}
 .s-repair{background:var(--warn-soft);color:var(--warn)}
 .s-retired{background:var(--off-soft);color:var(--off)}
+.s-disposed{background:var(--off-soft);color:var(--danger)}
 
 .empty{padding:56px 24px;text-align:center}
 .empty h2{margin:0 0 6px;font-size:22px;font-stretch:80%}
@@ -316,7 +317,7 @@ label.f textarea{height:76px;padding:8px 10px;resize:vertical}
       <label class="f">Brand<input name="manufacturer" list="mfrList" placeholder="e.g. Samsung" autocomplete="off"></label>
       <label class="f">Model<input name="model" autocomplete="off"></label>
       <label class="f">Serial number<input name="serial" autocomplete="off"></label>
-      <label class="f">Condition<select name="condition"><option value="">Not recorded</option><option>New</option><option>Good</option><option>Fair</option><option>Poor</option><option>Damaged</option></select></label>
+      <label class="f">Condition<select name="condition"><option value="">Not recorded</option><option>New</option><option>Good</option><option>Fair</option><option>Poor</option><option>Damaged</option><option>Disposed</option></select></label>
       <div class="f full"><span class="photo-label">Photo</span>
         <div class="photo-row">
           <div class="photo-prev" id="photoPrev">No photo</div>
@@ -328,11 +329,12 @@ label.f textarea{height:76px;padding:8px 10px;resize:vertical}
         </div>
       </div>
       <div class="fs-h">Assignment</div>
-      <label class="f">Status<select name="status"><option value="available">Available</option><option value="in-use">In use</option><option value="repair">In repair</option><option value="retired">Retired</option></select></label>
+      <label class="f">Status<select name="status"><option value="available">Available</option><option value="in-use">In use</option><option value="repair">In repair</option><option value="retired">Retired</option><option value="disposed">Disposed</option></select></label>
       <label class="f">Assigned to<input name="assignee" list="whoList" autocomplete="off"></label>
       <label class="f">Expected return<input name="dueDate" type="date"></label>
       <label class="f">Department<input name="department" list="deptList" placeholder="e.g. Finance" autocomplete="off"></label>
       <label class="f full">Location<select name="location" id="fLocation"></select><span class="dim" style="font-weight:400;font-size:13px">Missing a property or location? <a href="settings.html">Add it in Settings</a>.</span></label>
+      <label class="f full">Actual location <span class="dim" style="font-weight:400">(exact spot, e.g. PAV 1, Room 204, Shelf B)</span><input name="actualLocation" list="actList" autocomplete="off" placeholder="e.g. PAV 1"></label>
       <div class="fs-h">Purchase and value</div>
       <label class="f">Purchase date<input name="purchaseDate" type="date"></label>
       <label class="f">Supplier<input name="supplier" autocomplete="off"></label>
@@ -350,7 +352,7 @@ label.f textarea{height:76px;padding:8px 10px;resize:vertical}
     <div class="dlg-actions"><button class="btn" type="button" id="formCancel">Cancel</button><button class="btn primary" type="submit" id="formSubmit">Save asset</button></div>
   </form>
 </dialog>
-<datalist id="catList"></datalist><datalist id="locList"></datalist><datalist id="whoList"></datalist><datalist id="mfrList"></datalist><datalist id="deptList"></datalist><datalist id="propList"></datalist><datalist id="subList"></datalist>
+<datalist id="catList"></datalist><datalist id="locList"></datalist><datalist id="whoList"></datalist><datalist id="mfrList"></datalist><datalist id="deptList"></datalist><datalist id="propList"></datalist><datalist id="actList"></datalist><datalist id="subList"></datalist>
 
 <dialog id="askDlg">
   <form class="dlg" id="askForm" method="dialog">
@@ -392,8 +394,10 @@ const STATUS = {
   "available":{label:"Available"},
   "in-use":{label:"In use"},
   "repair":{label:"In repair"},
-  "retired":{label:"Retired"}
+  "retired":{label:"Retired"},
+  "disposed":{label:"Disposed"}
 };
+const inactive = st => st === "retired" || st === "disposed";
 const BASE_CATS = ["IT / Electronics","Communication Equipment","Office Equipment","Audio / Visual","Appliances","Kitchen Equipment","Furniture","Vehicles / Transportation","Tools / Equipment","Housekeeping","Other"];
 const SUBCATS = {
   "IT / Electronics":["Laptop","Desktop","Monitor","Printer","Router","Switch","Server","CCTV","UPS"],
@@ -412,12 +416,14 @@ const PHOTO_BUCKET = "asset-photos";
 // Web address printed inside every QR code. Scanning with any phone camera opens the asset here.
 // If the app moves to a different address, change this and reprint the labels.
 const PUBLIC_URL = "https://soleiyait8.github.io/Asset-Inventory-Sysm-PLUD/";
-const assetLink = id => PUBLIC_URL + "?scan#" + id;
+// New tags link to the public page with the asset's random code; anyone can scan without signing in
+const assetLink = a => (a && a.publicCode) ? PUBLIC_URL + "view.html?c=" + a.publicCode : PUBLIC_URL + "?scan#" + ((a && a.id) || a);
+const genCode = () => { const b = new Uint8Array(8); crypto.getRandomValues(b); return Array.from(b, x => x.toString(16).padStart(2, "0")).join(""); };
 const openedByScan = new URLSearchParams(location.search).has("scan");
 let scanPending = openedByScan;
 if(openedByScan) history.replaceState(null, "", location.pathname + location.hash);
 const LS_KEY = "asset-register-v1";
-const FIELDS = ["property","name","category","subcategory","condition","manufacturer","model","serial","status","assignee","dueDate","department","location","purchaseDate","supplier","invoice","value","usefulLife","warrantyEnd","lastService","nextService","notes"];
+const FIELDS = ["property","name","category","subcategory","condition","manufacturer","model","serial","status","assignee","dueDate","department","location","actualLocation","purchaseDate","supplier","invoice","value","usefulLife","warrantyEnd","lastService","nextService","notes"];
 
 let assets = [];
 let settings = { org: "" }, catalog = { properties: [], locations: [] };
@@ -456,7 +462,7 @@ function bookValue(a){
   return Math.max(0, Number(a.value) * (1 - yrs / Number(a.usefulLife)));
 }
 function issues(a){
-  const out = []; if(a.status === "retired") return out;
+  const out = []; if(inactive(a.status)) return out;
   const due = daysUntil(a.dueDate);
   if(a.status === "in-use" && due != null && due < 0) out.push("Return overdue by " + pl(-due,"day") + (a.assignee ? " (" + a.assignee + ")" : ""));
   const w = daysUntil(a.warrantyEnd);
@@ -472,10 +478,11 @@ const SUPABASE_KEY = "sb_publishable_RioLcLmP4qQxil5OXO8p-A_OjD9lY5D";
 let sb = null, me = null, channel = null, lastUid;
 
 function upsertLocal(a){ const i = assets.findIndex(x => x.id === a.id); if(i >= 0) assets[i] = a; else assets.push(a); }
-function rowToAsset(r){ return Object.assign({}, r.data, { id: r.id }); }
+function rowToAsset(r){ return Object.assign({}, r.data, { id: r.id, publicCode: r.public_code || (r.data && r.data.publicCode) || "" }); }
+function dataOf(a){ const d = clone(a); delete d.publicCode; return d; }
 
 async function loadAll(){
-  const res = await sb.from("assets").select("id,data").order("id");
+  const res = await sb.from("assets").select("id,data,public_code").order("id");
   if(res.error){ loaded = true; banner("The inventory couldn’t be loaded: " + res.error.message); renderAll(); return; }
   assets = res.data.map(rowToAsset);
   const st = await sb.from("settings").select("key,data");
@@ -508,14 +515,15 @@ async function saveAsset(a, isNew){
   a.updatedAt = Date.now();
   if(isNew){
     for(let attempt = 0; attempt < 5; attempt++){
-      const r = await sb.from("assets").insert({ id: a.id, data: clone(a) });
+      a.publicCode = genCode();
+      const r = await sb.from("assets").insert({ id: a.id, data: dataOf(a), public_code: a.publicCode });
       if(!r.error){ upsertLocal(a); renderAll(); return true; }
       if(r.error.code === "23505"){ await loadAll(); a.id = nextId(); continue; } // someone took this ID a moment ago
       writeErr(r.error); return false;
     }
     toast("Couldn’t assign an asset ID. Try again."); return false;
   }
-  const r = await sb.from("assets").update({ data: clone(a) }).eq("id", a.id).select("id");
+  const r = await sb.from("assets").update({ data: dataOf(a) }).eq("id", a.id).select("id");
   if(r.error){ writeErr(r.error); return false; }
   if(!r.data || !r.data.length){ toast("This asset was deleted or you can’t change it."); await loadAll(); return false; }
   upsertLocal(a); renderAll(); return true;
@@ -560,7 +568,7 @@ function qrSvg(text, label){
 function orgLabel(a){ const p = a && a.property; return p ? "Property of " + p : settings.org ? "Property of " + settings.org : "Property of your organization"; }
 function tagHtml(a){
   return '<div class="tag"><span class="rivet l"></span><span class="rivet r"></span>'+
-    '<div class="tag-qr">'+qrSvg(assetLink(a.id), a.id)+'</div>'+
+    '<div class="tag-qr">'+qrSvg(assetLink(a), a.id)+'</div>'+
     '<div class="tag-text"><div class="tag-org">'+esc(orgLabel(a))+'</div>'+
     '<div class="tag-id">'+esc(a.id)+'</div>'+
     '<div class="tag-name">'+esc(a.name || "")+'</div>'+
@@ -580,7 +588,7 @@ function drawTag(ctx, a, x, y, W, H){
   [x+18, x+W-18].forEach(cx => { const rg=ctx.createRadialGradient(cx-4,y+H/2-4,1,cx,y+H/2,12); rg.addColorStop(0,"#fff"); rg.addColorStop(1,"#9AA3AC"); ctx.beginPath(); ctx.arc(cx,y+H/2,11,0,Math.PI*2); ctx.fillStyle=rg; ctx.fill(); });
   const pad = 40, qs = H - pad*2, qx = x + 52, qy = y + pad;
   rr(ctx,qx,qy,qs,qs,10); ctx.fillStyle="#fff"; ctx.fill();
-  const m = qrMatrix(assetLink(a.id));
+  const m = qrMatrix(assetLink(a));
   if(m){ const inner = qs - 20, cell = inner / m.n; ctx.fillStyle="#000";
     for(let r=0;r<m.n;r++) for(let c=0;c<m.n;c++) if(m.dark(r,c)) ctx.fillRect(Math.floor(qx+10+c*cell), Math.floor(qy+10+r*cell), Math.ceil(cell), Math.ceil(cell)); }
   const tx = qx + qs + 40, tw = x + W - tx - 50;
@@ -620,7 +628,7 @@ function matches(a){
   else if(filter.status !== "all" && a.status !== filter.status) return false;
   if(filter.category !== "all" && (a.category||"") !== filter.category) return false;
   if(filter.q){
-    const hay = [a.property,a.subcategory,a.id,a.name,a.serial,a.assignee,a.location,a.category,a.supplier,a.notes,a.manufacturer,a.model,a.department,a.invoice,a.condition].join(" ").toLowerCase();
+    const hay = [a.property,a.subcategory,a.actualLocation,a.id,a.name,a.serial,a.assignee,a.location,a.category,a.supplier,a.notes,a.manufacturer,a.model,a.department,a.invoice,a.condition].join(" ").toLowerCase();
     if(!filter.q.toLowerCase().split(/\s+/).every(w => hay.includes(w))) return false;
   }
   return true;
@@ -641,6 +649,7 @@ function renderCatFilter(){
   $("#catList").innerHTML = categories().map(c => '<option value="'+esc(c)+'">').join("");
   $("#propList").innerHTML = propNames().map(c => '<option value="'+esc(c)+'">').join("");
   setLocList("");
+  $("#actList").innerHTML = [...new Set(assets.map(a => a.actualLocation).filter(Boolean))].sort().map(c => '<option value="'+esc(c)+'">').join("");
   $("#whoList").innerHTML = [...new Set(assets.map(a=>a.assignee).filter(Boolean))].map(c => '<option value="'+esc(c)+'">').join("");
   $("#mfrList").innerHTML = [...new Set(assets.map(a=>a.manufacturer).filter(Boolean))].map(c => '<option value="'+esc(c)+'">').join("");
   $("#deptList").innerHTML = [...new Set(assets.map(a=>a.department).filter(Boolean))].map(c => '<option value="'+esc(c)+'">').join("");
@@ -682,10 +691,11 @@ function renderDrawer(){
   const iss = issues(a), dueD = daysUntil(a.dueDate), wD = daysUntil(a.warrantyEnd), sD = daysUntil(a.nextService), bv = bookValue(a);
   const flag = (t, bad) => '<span class="flag '+(bad?'bad':'ok')+'">'+esc(t)+'</span>';
   const groups = [
-    ["Identification", [["Property", esc(a.property)], ["Name", esc(a.name)], ["Category", esc(a.category)], ["Sub-category", esc(a.subcategory)], ["Brand", esc(a.manufacturer)], ["Model", esc(a.model)], ["Serial number", esc(a.serial)], ["Condition", esc(a.condition)]]],
-    ["Assignment", [["Status", esc((STATUS[a.status]||STATUS.available).label)], ["Assigned to", esc(a.assignee)],
-      ["Expected return", a.status === "in-use" && a.dueDate ? esc(fmtDay(a.dueDate)) + (dueD < 0 ? flag("Overdue",1) : dueD <= 3 ? flag("Due soon",1) : "") : ""],
-      ["Department", esc(a.department)], ["Location", esc(a.location)]]],
+    ["Identification", [["Asset ID", esc(a.id)], ["Asset name", esc(a.name)], ["Category", esc(a.category)], ["Sub-category", esc(a.subcategory)]]],
+    ["Asset details", [["Brand", esc(a.manufacturer)], ["Model", esc(a.model)], ["Serial number", esc(a.serial)]]],
+    ["Location and assignment", [["Property", esc(a.property)], ["Location", esc(a.location)], ["Actual location", esc(a.actualLocation)], ["Department", esc(a.department)], ["Assigned to", esc(a.assignee)],
+      ["Expected return", a.status === "in-use" && a.dueDate ? esc(fmtDay(a.dueDate)) + (dueD < 0 ? flag("Overdue",1) : dueD <= 3 ? flag("Due soon",1) : "") : ""]]],
+    ["Status", [["Status", esc((STATUS[a.status]||STATUS.available).label)], ["Condition", esc(a.condition)]]],
     ["Purchase and value", [["Purchase date", a.purchaseDate ? esc(fmtDay(a.purchaseDate)) + ' <span class="dim">(' + esc(ageText(a.purchaseDate)) + ' ago)</span>' : ""],
       ["Supplier", esc(a.supplier)], ["Invoice or PO", esc(a.invoice)], ["Purchase cost", hasVal(a.value) ? esc(fmtMoney(a.value)) : ""],
       ["Useful life", Number(a.usefulLife) ? esc(pl(Number(a.usefulLife),"year")) : ""],
@@ -699,15 +709,15 @@ function renderDrawer(){
   let acts = "";
   if(w){
     if(a.status === "in-use") acts += '<button class="btn small primary" data-act="checkin">Check in</button>';
-    else if(a.status !== "retired") acts += '<button class="btn small primary" data-act="checkout">Check out</button>';
-    if(a.status !== "repair" && a.status !== "retired") acts += '<button class="btn small" data-act="repair">Send to repair</button>';
+    else if(!inactive(a.status)) acts += '<button class="btn small primary" data-act="checkout">Check out</button>';
+    if(a.status !== "repair" && !inactive(a.status)) acts += '<button class="btn small" data-act="repair">Send to repair</button>';
     if(a.status === "repair") acts += '<button class="btn small" data-act="repaired">Mark repaired</button>';
     acts += '<button class="btn small" data-act="transfer">Transfer</button><button class="btn small" data-act="move">Move</button><button class="btn small" data-act="service">Log service</button><button class="btn small" data-act="edit">Edit</button>';
   }
   acts += '<button class="btn small" data-act="print">Print label</button>';
   if(downloads) acts += '<button class="btn small" data-act="download">Download label</button>';
   if(w){
-    acts += a.status === "retired" ? '<button class="btn small" data-act="restore">Restore</button>' : '<button class="btn small" data-act="retire">Retire</button>';
+    acts += inactive(a.status) ? '<button class="btn small" data-act="restore">Restore</button>' : '<button class="btn small" data-act="retire">Retire</button><button class="btn small" data-act="dispose">Dispose</button>';
     acts += '<button class="btn small danger" data-act="delete">Delete</button>';
   }
   const hist = (a.history||[]).slice().reverse();
@@ -718,7 +728,7 @@ function renderDrawer(){
     '<h3 class="dsum-name">'+esc(a.name)+'</h3>'+
     '<div class="dsum-meta"><span class="pill s-'+esc(a.status)+'">'+esc(st.label)+'</span>'+(a.property ? '<span>'+esc(a.property)+'</span>' : '')+(a.condition ? '<span>· '+esc(a.condition)+' condition</span>' : '')+'</div>'+
     '<dl class="dsum-grid">'+
-      '<div><dt>Location</dt>'+v(a.location)+'</div>'+
+      '<div><dt>Location</dt>'+v([a.location, a.actualLocation].filter(Boolean).join(" · "))+'</div>'+
       '<div><dt>Assigned to</dt>'+v(a.assignee)+'</div>'+
       '<div><dt>Category</dt>'+v([a.category, a.subcategory].filter(Boolean).join(" › "))+'</div>'+
       '<div><dt>Brand / model</dt>'+v([a.manufacturer, a.model].filter(Boolean).join(" "))+'</div>'+
@@ -728,7 +738,7 @@ function renderDrawer(){
   const photo = a.photo
     ? '<button type="button" class="dphoto loading" id="dPhoto" aria-label="Enlarge photo of '+esc(a.name)+'"><img alt="Photo of '+esc(a.name)+'"><span class="zoomhint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>Enlarge</span></button>'
     : (w ? '<button type="button" class="dphoto empty" data-act="edit">+ Add a photo</button>' : '<div class="nophoto">No photo</div>');
-  const qrCard = '<button type="button" class="dqr" id="dQr" aria-label="Enlarge QR code for '+esc(a.id)+'">'+qrSvg(assetLink(a.id), a.id)+'<b>'+esc(a.id)+'</b><small>Tap to enlarge</small></button>';
+  const qrCard = '<button type="button" class="dqr" id="dQr" aria-label="Enlarge QR code for '+esc(a.id)+'">'+qrSvg(assetLink(a), a.id)+'<b>'+esc(a.id)+'</b><small>Tap to enlarge</small></button>';
   const labelActs = '<button class="btn small" data-act="print">Print label</button>' + (downloads ? '<button class="btn small" data-act="download">Download label</button>' : '');
   acts = acts.replace('<button class="btn small" data-act="print">Print label</button>', '').replace('<button class="btn small" data-act="download">Download label</button>', '');
   $("#dBody").innerHTML = '<div class="dmedia">' + photo + qrCard + '</div>' + summary +
@@ -752,7 +762,7 @@ async function openLightbox(a){
 }
 function openQrLightbox(a){
   if(!a) return;
-  const svg = qrSvg(assetLink(a.id), a.id).replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" ');
+  const svg = qrSvg(assetLink(a), a.id).replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" ');
   showLightbox(a, "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg), "QR code for " + a.id, true);
 }
 function showLightbox(a, u, alt, isQr){
@@ -961,7 +971,7 @@ $("#assetForm").addEventListener("submit", async e => {
   const fields = {}; FIELDS.forEach(k => { fields[k] = f.elements[k] ? v(k) : ""; });
   ["value","usefulLife"].forEach(k => { fields[k] = fields[k] === "" ? "" : Number(fields[k]); });
   if(fields.assignee && fields.status === "available") fields.status = "in-use";
-  if(fields.status !== "in-use"){ if(fields.status !== "available") fields.assignee = ""; fields.dueDate = ""; }
+  if(fields.status !== "in-use") fields.dueDate = "";
   $("#formSubmit").disabled = true;
   const oldPhoto = editingId ? ((byId(editingId) || {}).photo || "") : "";
   let newPhoto = formPhoto.path, uploaded = "";
@@ -1027,7 +1037,11 @@ async function act(name, id){
   } else if(name === "retire"){
     const ok = await ask({ title:"Retire " + a.id + "?", message:"It stays in the register for your records but can’t be checked out.", okLabel:"Retire" });
     if(!ok) return; a.status = "retired"; a.assignee = ""; log("Retired");
+  } else if(name === "dispose"){
+    const why = await ask({ title:"Dispose " + a.id + "?", message:"Use this when the item is sold, scrapped, donated or written off. It stays in the register for your records.", input:{label:"Reason (optional)", value:""}, okLabel:"Dispose", danger:true });
+    if(why === null) return; a.status = "disposed"; a.condition = "Disposed"; a.dueDate = ""; log("Disposed" + (why ? ": " + why : "") + (a.assignee ? " (last assigned to " + a.assignee + ")" : ""));
   } else if(name === "restore"){
+    if(a.condition === "Disposed") a.condition = "";
     a.status = "available"; log("Restored to service");
   } else if(name === "delete"){
     const ok = await ask({ title:"Delete " + a.id + "?", message:"This removes the asset and its history permanently. Printed tags for it will stop working.", okLabel:"Delete", danger:true });
@@ -1066,8 +1080,9 @@ function scanLoop(){
   raf = requestAnimationFrame(scanLoop);
 }
 function handleScan(text){
-  const id = normalizeId(String(text));
-  const a = id && byId(id);
+  const cm = /[?&]c=([a-z0-9]{12,32})/i.exec(String(text));
+  let a = cm ? assets.find(x => x.publicCode === cm[1].toLowerCase()) : null;
+  if(!a){ const id = normalizeId(String(text)); a = id && byId(id); }
   if(!a){ $("#scanErr").textContent = "No asset in this inventory matches “" + String(text).slice(0,60) + "”."; return false; }
   stopCamera(); $("#scanDlg").close(); scannedId = a.id; openDrawer(a.id); return true;
 }

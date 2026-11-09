@@ -84,3 +84,9 @@ create policy "staff replace asset photos" on storage.objects for update to auth
   using (bucket_id = 'asset-photos' and (select public.is_staff())) with check (bucket_id = 'asset-photos' and (select public.is_staff()));
 create policy "staff delete asset photos" on storage.objects for delete to authenticated
   using (bucket_id = 'asset-photos' and (select public.is_staff()));
+
+-- Random public code per asset, used in QR links to the public view page
+alter table public.assets
+  add column public_code text unique not null
+  default substr(replace(gen_random_uuid()::text, '-', ''), 1, 16)
+  check (public_code ~ '^[a-z0-9]{12,32}$');
