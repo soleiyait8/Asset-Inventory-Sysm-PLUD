@@ -324,7 +324,7 @@ label.f textarea{height:76px;padding:8px 10px;resize:vertical}
     <div class="cam"><video id="video" playsinline muted></video><div class="frame" id="camFrame" hidden></div><div class="msg" id="camMsg">Starting camera…</div></div>
     <div class="scanrow">
       <label class="btn small" style="cursor:pointer">Upload a photo<input type="file" id="scanFile" accept="image/*" hidden></label>
-      <input type="text" id="scanManual" placeholder="Or type an ID, e.g. AST-0001" aria-label="Asset ID">
+      <input type="text" id="scanManual" placeholder="Or type an ID, e.g. Asset-001" aria-label="Asset ID">
       <button class="btn small primary" id="scanGo" type="button">Find</button>
     </div>
     <div class="err" id="scanErr"></div>
@@ -472,10 +472,15 @@ async function saveSettings(){
   if(r.error) writeErr(r.error);
 }
 
+// Accepts "Asset-001", "asset-1", or older "AST-0001" tags and returns "Asset-001"
+function normalizeId(text){
+  const m = /\b([A-Za-z]{2,5})-(\d{1,6})\b/.exec(String(text || "").trim());
+  return m ? "Asset-" + String(parseInt(m[2], 10)).padStart(3, "0") : null;
+}
 function nextId(){
   let max = 0;
   assets.forEach(a => { const m = /-(\d+)$/.exec(a.id || ""); if(m) max = Math.max(max, parseInt(m[1],10)); });
-  return "AST-" + String(max + 1).padStart(4, "0");
+  return "Asset-" + String(max + 1).padStart(3, "0");
 }
 
 /* ---------- QR ---------- */
@@ -584,12 +589,12 @@ function renderTable(){
   const t = $("#table");
   if(!loaded){ t.innerHTML = '<div class="empty"><p>Loading inventory…</p></div>'; return; }
   if(!assets.length){
-    const demo = { id:"AST-0001", name:"Your first asset" };
+    const demo = { id:"Asset-001", name:"Your first asset" };
     t.innerHTML = '<div class="empty">'+tagHtml(demo)+'<h2>No assets yet</h2><p>Add an asset and it gets a printable QR tag. Scan the tag later to pull up its record.</p>'+
       (canWrite ? '<button class="btn primary" type="button" data-act="add">Add your first asset</button>' : '')+'</div>';
     return;
   }
-  const list = assets.filter(matches).sort((a,b) => (a.id||"").localeCompare(b.id||""));
+  const list = assets.filter(matches).sort((a,b) => (a.id||"").localeCompare(b.id||"", undefined, {numeric:true}));
   const allSel = list.length && list.every(a => selected.has(a.id));
   let html = '<div class="row head"><span><input type="checkbox" class="check" id="selAll" aria-label="Select all shown"'+(allSel?' checked':'')+'></span><span>Tag</span><span>Asset</span><span>Category</span><span>Location</span><span>Assigned to</span><span>Status</span></div>';
   if(!list.length) html += '<div class="empty"><h2>No matches</h2><p>Try a different search or clear the filters.</p><button class="btn" type="button" data-act="clear">Clear filters</button></div>';
@@ -676,7 +681,8 @@ function closeDrawer(){
 }
 function routeFromHash(){
   const h = decodeURIComponent(location.hash.slice(1));
-  if(/^AST-\d+$/.test(h)){ if(byId(h) && openId !== h) openDrawer(h); }
+  const nid = normalizeId(h);
+  if(nid){ if(nid !== h){ history.replaceState(null, "", "#" + nid); } if(byId(nid) && openId !== nid) openDrawer(nid); }
   else if(openId && !h){ closeDrawer(); }
 }
 window.addEventListener("hashchange", routeFromHash);
@@ -859,8 +865,7 @@ function scanLoop(){
   raf = requestAnimationFrame(scanLoop);
 }
 function handleScan(text){
-  const m = /([A-Z]{2,5}-\d{3,})/i.exec(String(text).trim());
-  const id = m ? m[1].toUpperCase() : null;
+  const id = normalizeId(String(text));
   const a = id && byId(id);
   if(!a){ $("#scanErr").textContent = "No asset in this inventory matches “" + String(text).slice(0,60) + "”."; return false; }
   stopCamera(); $("#scanDlg").close(); openDrawer(a.id); toast("Found " + a.id); return true;
@@ -868,7 +873,7 @@ function handleScan(text){
 $("#btnScan").addEventListener("click", () => { $("#scanErr").textContent = ""; $("#scanManual").value = ""; $("#scanDlg").showModal(); startCamera(); });
 $("#scanClose").addEventListener("click", () => $("#scanDlg").close());
 $("#scanDlg").addEventListener("close", stopCamera);
-$("#scanGo").addEventListener("click", () => { const v = $("#scanManual").value.trim(); if(v) handleScan(/^\d+$/.test(v) ? "AST-" + v.padStart(4,"0") : v); });
+$("#scanGo").addEventListener("click", () => { const v = $("#scanManual").value.trim(); if(v) handleScan(/^\d+$/.test(v) ? "Asset-" + v : v); });
 $("#scanManual").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); $("#scanGo").click(); } });
 $("#scanFile").addEventListener("change", async e => {
   const file = e.target.files && e.target.files[0]; e.target.value = ""; if(!file) return;
@@ -885,7 +890,7 @@ async function exportCsv(){
   if(!downloads) return;
   const cols = [["property","Property"],["id","Asset ID"],["name","Asset name"],["category","Category"],["subcategory","Sub-category"],["manufacturer","Brand"],["model","Model"],["serial","Serial number"],["condition","Condition"],["status","Status"],["assignee","Assigned to"],["dueDate","Expected return"],["department","Department"],["location","Location"],["purchaseDate","Purchase date"],["supplier","Supplier"],["invoice","Invoice or PO"],["value","Purchase cost"],["usefulLife","Useful life (years)"],["_bv","Current value"],["warrantyEnd","Warranty ends"],["lastService","Last service"],["nextService","Next service"],["notes","Notes"]];
   const q = s => { s = String(s == null ? "" : s); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
-  const rows = [cols.map(c => c[1]).join(",")].concat(assets.slice().sort((a,b)=>a.id.localeCompare(b.id)).map(a => cols.map(([k]) => q(k === "status" ? (STATUS[a.status]||{}).label : k === "_bv" ? (bookValue(a) == null ? "" : bookValue(a).toFixed(2)) : a[k])).join(",")));
+  const rows = [cols.map(c => c[1]).join(",")].concat(assets.slice().sort((a,b)=>a.id.localeCompare(b.id, undefined, {numeric:true})).map(a => cols.map(([k]) => q(k === "status" ? (STATUS[a.status]||{}).label : k === "_bv" ? (bookValue(a) == null ? "" : bookValue(a).toFixed(2)) : a[k])).join(",")));
   try{ await downloads.save({ filename:"asset-register-" + new Date().toISOString().slice(0,10) + ".csv", data: rows.join("\n") }); toast("CSV saved"); }
   catch(e){ if(e && e.code !== "declined") toast("Couldn’t save the CSV here."); }
 }
@@ -921,7 +926,7 @@ $("#btnClearSel").addEventListener("click", () => { selected.clear(); renderTabl
 /* ---------- Sign-in (handled by login.html) ---------- */
 function goToLogin(reason){
   const h = decodeURIComponent(location.hash.slice(1)), q = new URLSearchParams();
-  if(/^[A-Z]{2,5}-\d+$/.test(h)) q.set("next", h);
+  const nid = normalizeId(h); if(nid) q.set("next", nid);
   if(reason) q.set("reason", reason);
   const qs = q.toString();
   location.replace("login.html" + (qs ? "?" + qs : ""));

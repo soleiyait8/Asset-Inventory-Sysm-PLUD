@@ -10,7 +10,7 @@ create table public.staff (
 );
 
 create table public.assets (
-  id text primary key check (id ~ '^[A-Z]{2,5}-[0-9]+$'),
+  id text primary key check (id ~ '^Asset-[0-9]{3,}$'),
   data jsonb not null,
   updated_at timestamptz not null default now(),
   updated_by text default (auth.jwt() ->> 'email')

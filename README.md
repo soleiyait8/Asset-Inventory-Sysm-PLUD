@@ -7,7 +7,7 @@ It runs as static pages on GitHub Pages, backed by a Supabase database, with sta
 ## Features
 
 - **Asset records** with name, category, condition, manufacturer, model, serial number, department, location, assignee, purchase date, supplier, invoice/PO number, purchase cost, useful life, warranty end, service dates, and notes.
-- **Automatic asset IDs** (`AST-0001`, `AST-0002`, …), each with its own QR code.
+- **Automatic asset IDs** (`Asset-001`, `Asset-002`, …), each with its own QR code.
 - **Printable QR tags** for one asset or a whole selection, or download them as a PNG label sheet.
 - **QR scanning** with the device camera, from an uploaded photo, or by typing the ID.
 - **Status tracking:** Available, In use, In repair, Retired, with check-out/check-in, repair, move, service logging, and retirement actions.

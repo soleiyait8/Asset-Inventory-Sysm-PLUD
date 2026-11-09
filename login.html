@@ -131,7 +131,7 @@ button,input{font:inherit;color:inherit}
         <div class="tag-qr" id="tagQr"></div>
         <div class="tag-text">
           <div class="tag-org">Property of PLUD</div>
-          <div class="tag-id">AST-0001</div>
+          <div class="tag-id">Asset-001</div>
           <div class="tag-name">Staff access</div>
           <div class="tag-foot">Scan to look up. Do not remove.</div>
         </div>
@@ -243,7 +243,7 @@ const $ = s => document.querySelector(s);
 
 /* Decorative QR on the tag */
 try{
-  const q = qrcode(0, "M"); q.addData("AST-0001"); q.make();
+  const q = qrcode(0, "M"); q.addData("Asset-001"); q.make();
   const n = q.getModuleCount(); let d = "";
   for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(q.isDark(r,c)) d += "M"+c+","+r+"h1v1h-1z";
   $("#tagQr").innerHTML = '<svg viewBox="-1 -1 '+(n+2)+' '+(n+2)+'" shape-rendering="crispEdges"><rect x="-1" y="-1" width="'+(n+2)+'" height="'+(n+2)+'" fill="#fff"/><path d="'+d+'" fill="#000"/></svg>';
@@ -252,7 +252,7 @@ try{
 /* Where to go after sign-in: the app, optionally straight to a scanned asset */
 const next = new URLSearchParams(location.search).get("next") || "";
 const ret = new URLSearchParams(location.search).get("return");
-const APP_URL = (ret === "database" ? "database.html" : "index.html") + (/^[A-Z]{2,5}-\d+$/.test(next) ? "#" + next : "");
+const APP_URL = (ret === "database" ? "database.html" : "index.html") + (/^Asset-\d+$/.test(next) ? "#" + next : "");
 const PAGE_URL = location.origin + location.pathname;
 
 function show(view){
