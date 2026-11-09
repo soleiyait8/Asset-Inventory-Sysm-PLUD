@@ -61,8 +61,40 @@ button,input,select,textarea{font:inherit;color:inherit}
 .photo-prev{width:96px;height:96px;border-radius:10px;border:1px dashed var(--line);background:var(--surface-2);display:grid;place-items:center;overflow:hidden;color:var(--muted);font-size:12px;font-weight:400;flex:none}
 .photo-prev img{width:100%;height:100%;object-fit:cover;display:block}
 .photo-btns{display:flex;gap:8px;flex-wrap:wrap}
-.dphoto{display:block;margin-bottom:14px;border-radius:12px;overflow:hidden;background:var(--surface-2);aspect-ratio:4/3}
-.dphoto img{width:100%;height:100%;object-fit:cover;display:block}
+.dphoto{position:relative;display:block;width:100%;height:280px;margin:0 0 14px;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface-2);cursor:zoom-in;color:inherit;font:inherit}
+.dphoto img{width:100%;height:100%;object-fit:contain;display:block}
+.dphoto .zoomhint{position:absolute;right:10px;bottom:10px;display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:rgba(10,14,20,.72);color:#fff;font-size:13px;font-weight:600;pointer-events:none}
+.dphoto .zoomhint svg{width:15px;height:15px}
+.dphoto:hover .zoomhint{background:rgba(10,14,20,.88)}
+.dphoto.empty{height:96px;cursor:pointer;display:grid;place-items:center;border-style:dashed;color:var(--muted);font-weight:600}
+.dphoto.empty:hover{color:var(--accent);border-color:var(--accent)}
+.dphoto.loading::after{content:"Loading photo…";position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:14px}
+.dsum{margin:0 0 14px;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.scanned{display:flex;align-items:center;gap:8px;margin:-4px 0 10px;color:var(--ok);font-weight:700;font-size:14px}
+.scanned svg{width:18px;height:18px}
+.dsum-name{font-size:22px;line-height:1.2;font-weight:800;font-stretch:85%;margin:0 0 6px;word-break:break-word}
+.dsum-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:var(--muted);font-size:14px;margin-bottom:12px}
+.dsum-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin:0}
+.dsum-grid div{min-width:0}
+.dsum-grid dt{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.dsum-grid dd{margin:2px 0 0;font-weight:600;overflow-wrap:anywhere}
+.dsum-grid dd.none{color:var(--muted);font-weight:400}
+.nm{display:flex !important;align-items:center;gap:10px}
+.nm > div{min-width:0}
+.rthumb{flex:none;width:40px;height:40px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);padding:0;overflow:hidden;cursor:zoom-in;display:block}
+.rthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.rthumb.none{cursor:inherit;border-style:dashed}
+dialog.lightbox{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:#0B0F14;color:#fff;box-shadow:none}
+dialog.lightbox::backdrop{background:#0B0F14}
+.lb-bar{position:absolute;top:0;left:0;right:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;background:linear-gradient(rgba(8,11,16,.85),rgba(8,11,16,0))}
+.lb-cap{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.lb-cap b{font-stretch:75%;font-size:17px;margin-right:8px}
+.lb-tools{display:flex;gap:8px;flex:none}
+.lb-tools button{height:38px;padding:0 14px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.lb-tools button:hover{background:rgba(255,255,255,.18)}
+.lb-stage{position:absolute;inset:0;overflow:auto;display:flex;padding:calc(64px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.lb-stage img{margin:auto;display:block;max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in;border-radius:6px}
+.lb-stage.zoomed img{max-width:none;max-height:none;cursor:zoom-out;border-radius:0}
 .brand .org{margin-top:4px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .linkish{background:none;border:0;padding:2px 4px;margin:-2px -4px;color:var(--accent);cursor:pointer;border-radius:4px}
 .linkish:hover{text-decoration:underline}
@@ -153,9 +185,9 @@ select.field-select{height:40px;padding:0 10px;border:1px solid var(--line);bord
 .tag-foot{font-size:10px;color:#4A5561;margin-top:3px}
 
 /* Drawer */
-.scrim{position:fixed;inset:0;background:rgba(10,14,20,.38);opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim{position:fixed;inset:0;z-index:44;background:rgba(10,14,20,.38);opacity:0;pointer-events:none;transition:opacity .2s}
 .scrim.show{opacity:1;pointer-events:auto}
-.drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--surface);box-shadow:var(--shadow);transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;z-index:20;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--surface);box-shadow:var(--shadow);transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;z-index:45;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .drawer.show{transform:none}
 .dhead{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
 .dhead h2{margin:0;font-size:20px;font-stretch:80%}
@@ -332,6 +364,10 @@ label.f textarea{height:76px;padding:8px 10px;resize:vertical}
   </div>
 </dialog>
 
+<dialog class="lightbox" id="lightbox" aria-label="Asset photo">
+  <div class="lb-bar"><span class="lb-cap" id="lbCap"></span><span class="lb-tools"><button type="button" id="lbZoom">Zoom in</button><button type="button" id="lbClose">Close</button></span></div>
+  <div class="lb-stage" id="lbStage"><img id="lbImg" alt=""></div>
+</dialog>
 <div class="toast" id="toast" role="status"></div>
 <div id="print-area" aria-hidden="true"></div>
 <canvas id="work" hidden></canvas>
@@ -601,7 +637,7 @@ function renderTable(){
   html += list.map(a => '<div class="row item" data-id="'+esc(a.id)+'" tabindex="0" role="button" aria-label="Open '+esc(a.id)+' '+esc(a.name)+'">'+
     '<span class="c-check"><input type="checkbox" class="check" data-sel="'+esc(a.id)+'" aria-label="Select '+esc(a.id)+'"'+(selected.has(a.id)?' checked':'')+'></span>'+
     '<span class="c-id id">'+esc(a.id)+'</span>'+
-    '<span class="c-name" style="min-width:0"><div class="name">'+esc(a.name)+(issues(a).length?'<span class="flag bad" title="'+esc(issues(a).join(". "))+'">'+pl(issues(a).length,"alert")+'</span>':'')+'</div>'+(function(){ const sub = [[a.manufacturer,a.model].filter(Boolean).join(" "), a.serial ? "S/N " + a.serial : ""].filter(Boolean).join(", "); return sub ? '<div class="sub">'+esc(sub)+'</div>' : ''; })()+'</span>'+
+    '<span class="c-name nm" style="min-width:0">'+rowThumb(a)+'<div><div class="name">'+esc(a.name)+(issues(a).length?'<span class="flag bad" title="'+esc(issues(a).join(". "))+'">'+pl(issues(a).length,"alert")+'</span>':'')+'</div>'+(function(){ const sub = [[a.manufacturer,a.model].filter(Boolean).join(" "), a.serial ? "S/N " + a.serial : ""].filter(Boolean).join(", "); return sub ? '<div class="sub">'+esc(sub)+'</div>' : ''; })()+'</div></span>'+
     '<span class="c-cat cell dim">'+esc(a.category||"—")+'</span>'+
     '<span class="c-loc cell">'+esc(a.location||"—")+'</span>'+
     '<span class="c-who cell">'+esc(a.assignee||"—")+'</span>'+
@@ -651,13 +687,85 @@ function renderDrawer(){
     acts += '<button class="btn small danger" data-act="delete">Delete</button>';
   }
   const hist = (a.history||[]).slice().reverse();
-  $("#dBody").innerHTML = (a.photo ? '<a class="dphoto" id="dPhoto" target="_blank" rel="noopener"><img alt="Photo of '+esc(a.name)+'"></a>' : '')+'<div class="tagstage">'+tagHtml(a)+'</div>'+
+  const st = STATUS[a.status] || STATUS.available;
+  const v = x => x ? '<dd>'+esc(x)+'</dd>' : '<dd class="none">Not set</dd>';
+  const summary = '<section class="dsum" aria-label="Summary">'+
+    (scannedId === a.id ? '<div class="scanned"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Tag scanned: matched '+esc(a.id)+'</div>' : '')+
+    '<h3 class="dsum-name">'+esc(a.name)+'</h3>'+
+    '<div class="dsum-meta"><span class="pill s-'+esc(a.status)+'">'+esc(st.label)+'</span>'+(a.property ? '<span>'+esc(a.property)+'</span>' : '')+(a.condition ? '<span>· '+esc(a.condition)+' condition</span>' : '')+'</div>'+
+    '<dl class="dsum-grid">'+
+      '<div><dt>Location</dt>'+v(a.location)+'</div>'+
+      '<div><dt>Assigned to</dt>'+v(a.assignee)+'</div>'+
+      '<div><dt>Category</dt>'+v([a.category, a.subcategory].filter(Boolean).join(" › "))+'</div>'+
+      '<div><dt>Brand / model</dt>'+v([a.manufacturer, a.model].filter(Boolean).join(" "))+'</div>'+
+      '<div><dt>Serial number</dt>'+v(a.serial)+'</div>'+
+      '<div><dt>Department</dt>'+v(a.department)+'</div>'+
+    '</dl></section>';
+  const photo = a.photo
+    ? '<button type="button" class="dphoto loading" id="dPhoto" aria-label="Enlarge photo of '+esc(a.name)+'"><img alt="Photo of '+esc(a.name)+'"><span class="zoomhint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>Enlarge</span></button>'
+    : (w ? '<button type="button" class="dphoto empty" data-act="edit">+ Add a photo</button>' : '');
+  const labelActs = '<button class="btn small" data-act="print">Print label</button>' + (downloads ? '<button class="btn small" data-act="download">Download label</button>' : '');
+  acts = acts.replace('<button class="btn small" data-act="print">Print label</button>', '').replace('<button class="btn small" data-act="download">Download label</button>', '');
+  $("#dBody").innerHTML = photo + summary +
     (iss.length ? '<div class="alerts">'+iss.map(t => '<div class="alert">'+esc(t)+'</div>').join("")+'</div>' : '')+
-    '<div class="dactions">'+acts+'</div>'+
+    (acts ? '<div class="dactions">'+acts+'</div>' : '')+
     groups.map(([h, rows]) => '<h3 class="section-h">'+esc(h)+'</h3><dl class="facts">'+rows.map(r => '<dt>'+esc(r[0])+'</dt><dd>'+r[1]+'</dd>').join("")+'</dl>').join("")+
+    '<h3 class="section-h">QR label</h3><div class="tagstage">'+tagHtml(a)+'</div><div class="dactions">'+labelActs+'</div>'+
     '<h3 class="section-h">History</h3>'+(hist.length ? '<ul class="history">'+hist.map(h => '<li><div>'+esc(h.text)+'</div><div class="when">'+esc(fmtDate(h.t) + (h.by ? " by " + h.by : ""))+'</div></li>').join("")+'</ul>' : '<p class="dim" style="color:var(--muted);margin:0">No activity yet.</p>');
-  if(a.photo){ const pid = a.id; photoUrl(a.photo).then(u => { const el = $("#dPhoto"); if(el && openId === pid && u){ el.href = u; el.querySelector("img").src = u; } }); }
+  if(a.photo){
+    const pid = a.id;
+    photoUrl(a.photo).then(u => { const el = $("#dPhoto"); if(!el || openId !== pid) return; el.classList.remove("loading"); if(u) el.querySelector("img").src = u; else el.querySelector(".zoomhint").textContent = "Photo unavailable"; });
+  }
 }
+
+/* ---------- Photo lightbox (one click to enlarge) ---------- */
+let scannedId = null, lbAsset = null;
+async function openLightbox(a){
+  if(!a || !a.photo) return;
+  const u = await photoUrl(a.photo); if(!u){ toast("The photo couldn’t be loaded."); return; }
+  lbAsset = a;
+  const img = $("#lbImg"), stage = $("#lbStage");
+  stage.classList.remove("zoomed"); img.style.width = ""; $("#lbZoom").textContent = "Zoom in";
+  img.src = u; img.alt = "Photo of " + (a.name || a.id);
+  $("#lbCap").innerHTML = '<b>'+esc(a.id)+'</b>'+esc(a.name || "");
+  $("#lightbox").showModal();
+}
+function lbToggleZoom(ev){
+  const img = $("#lbImg"), stage = $("#lbStage");
+  if(stage.classList.contains("zoomed")){ stage.classList.remove("zoomed"); img.style.width = ""; $("#lbZoom").textContent = "Zoom in"; return; }
+  const r = img.getBoundingClientRect(), fx = ev && ev.clientX ? (ev.clientX - r.left) / r.width : .5, fy = ev && ev.clientY ? (ev.clientY - r.top) / r.height : .5;
+  const target = Math.max(img.naturalWidth, r.width * 2.5);
+  stage.classList.add("zoomed"); img.style.width = target + "px"; $("#lbZoom").textContent = "Fit to screen";
+  requestAnimationFrame(() => { stage.scrollLeft = fx * img.offsetWidth - stage.clientWidth / 2 + img.offsetLeft; stage.scrollTop = fy * img.offsetHeight - stage.clientHeight / 2 + img.offsetTop; });
+}
+$("#lbImg").addEventListener("click", e => { e.stopPropagation(); lbToggleZoom(e); });
+$("#lbZoom").addEventListener("click", () => lbToggleZoom());
+$("#lbClose").addEventListener("click", () => $("#lightbox").close());
+$("#lbStage").addEventListener("click", e => { if(e.target.id === "lbStage") $("#lightbox").close(); });
+$("#dBody").addEventListener("click", e => { if(e.target.closest("#dPhoto") && openId) openLightbox(byId(openId)); });
+
+/* ---------- List thumbnails ---------- */
+let thumbBusy = false;
+function rowThumb(a){
+  if(!a.photo) return '<span class="rthumb none" aria-hidden="true"></span>';
+  const c = photoCache.get(a.photo), u = c && c.exp > Date.now() ? c.url : "";
+  if(!u) primeThumbs();
+  return '<button type="button" class="rthumb" data-thumb="'+esc(a.id)+'" aria-label="Enlarge photo of '+esc(a.name)+'">'+(u ? '<img loading="lazy" alt="" src="'+esc(u)+'">' : '')+'</button>';
+}
+function primeThumbs(){
+  if(thumbBusy || !sb) return; thumbBusy = true;
+  setTimeout(async () => {
+    const need = [...new Set(assets.map(a => a.photo).filter(p => { const c = p && photoCache.get(p); return p && !(c && c.exp > Date.now()); }))];
+    try{
+      for(let i = 0; i < need.length; i += 100){
+        const r = await sb.storage.from(PHOTO_BUCKET).createSignedUrls(need.slice(i, i + 100), 3600);
+        (r.data || []).forEach(x => { photoCache.set(x.path, { url: x.signedUrl || "", exp: Date.now() + (x.signedUrl ? 50*60*1000 : 5*60*1000) }); });
+      }
+    }catch(e){}
+    thumbBusy = false; if(need.length) renderTable();
+  }, 0);
+}
+
 function renderAll(){
   $("#orgName").textContent = settings.org || "Your organization";
   $("#editOrg").hidden = !canWrite;
@@ -674,7 +782,7 @@ function openDrawer(id){
   setTimeout(()=>$("#dClose").focus(), 50);
 }
 function closeDrawer(){
-  const was = openId; openId = null;
+  const was = openId; openId = null; scannedId = null;
   $("#drawer").classList.remove("show"); $("#drawer").setAttribute("aria-hidden","true"); $("#scrim").classList.remove("show");
   if(location.hash) history.replaceState(null, "", location.pathname + location.search);
   const row = was && document.querySelector('.row.item[data-id="'+was+'"]'); if(row) row.focus();
@@ -881,7 +989,7 @@ function handleScan(text){
   const id = normalizeId(String(text));
   const a = id && byId(id);
   if(!a){ $("#scanErr").textContent = "No asset in this inventory matches “" + String(text).slice(0,60) + "”."; return false; }
-  stopCamera(); $("#scanDlg").close(); openDrawer(a.id); toast("Found " + a.id); return true;
+  stopCamera(); $("#scanDlg").close(); scannedId = a.id; openDrawer(a.id); return true;
 }
 $("#btnScan").addEventListener("click", () => { $("#scanErr").textContent = ""; $("#scanManual").value = ""; $("#scanDlg").showModal(); startCamera(); });
 $("#scanClose").addEventListener("click", () => $("#scanDlg").close());
@@ -925,6 +1033,8 @@ $("#table").addEventListener("click", e => {
   const cb = e.target.closest("[data-sel]");
   if(cb){ cb.checked ? selected.add(cb.dataset.sel) : selected.delete(cb.dataset.sel); renderSelbar(); e.stopPropagation(); return; }
   if(e.target.closest(".c-check")) return;
+  const th = e.target.closest("[data-thumb]");
+  if(th){ e.stopPropagation(); openLightbox(byId(th.dataset.thumb)); return; }
   const row = e.target.closest(".row.item"); if(row) openDrawer(row.dataset.id);
 });
 $("#table").addEventListener("keydown", e => { if((e.key === "Enter" || e.key === " ") && e.target.classList.contains("item")){ e.preventDefault(); openDrawer(e.target.dataset.id); } });
