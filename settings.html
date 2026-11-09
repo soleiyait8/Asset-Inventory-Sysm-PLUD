@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en" class="booting">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Settings · Asset Register</title>
+<link rel="stylesheet" href="shell.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#EDF0F2; --surface:#FFFFFF; --surface-2:#F5F7F8; --ink:#1C2430; --muted:#5E6A77; --line:#D5DBE0;
+  --accent:#1F5FD1; --accent-ink:#FFFFFF; --accent-soft:#E3ECFB;
+  --ok:#1E7A4C; --ok-soft:#DDF1E6; --warn:#9A5B00; --warn-soft:#FBEBCF; --danger:#B42318; --danger-soft:#FDE7E5;
+  --shadow:0 1px 2px rgba(28,36,48,.05),0 6px 18px rgba(28,36,48,.06);
+  --font:"Archivo", "Helvetica Neue", Arial, system-ui, sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#161C23; --surface:#1F2731; --surface-2:#252E39; --ink:#E7ECF1; --muted:#9AA6B3; --line:#33404D;
+    --accent:#6E9BF0; --accent-ink:#0E1620; --accent-soft:#22324C;
+    --ok:#5CC991; --ok-soft:#1C3A2B; --warn:#E8B04F; --warn-soft:#3D3019; --danger:#F07467; --danger-soft:#3E201E;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#161C23; --surface:#1F2731; --surface-2:#252E39; --ink:#E7ECF1; --muted:#9AA6B3; --line:#33404D;
+  --accent:#6E9BF0; --accent-ink:#0E1620; --accent-soft:#22324C;
+  --ok:#5CC991; --ok-soft:#1C3A2B; --warn:#E8B04F; --warn-soft:#3D3019; --danger:#F07467; --danger-soft:#3E201E;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.booting .wrap{visibility:hidden}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 24px 56px}
+h1{margin:0;font-size:34px;line-height:1.05;font-weight:800;font-stretch:72%}
+.sub{color:var(--muted);margin:4px 0 22px}
+.banner{display:none;margin:0 0 14px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-weight:500}
+.banner.show{display:block}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:20px;min-width:0}
+.card + .card{margin-top:18px}
+.grid > .card{margin-top:0}
+.card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.card-h h2{margin:0;font-size:20px;font-weight:800;font-stretch:80%}
+.card-h p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:18px;align-items:start;margin-top:18px}
+@media (max-width:980px){.grid{grid-template-columns:1fr}}
+
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:600;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.small{height:32px;padding:0 10px;font-size:13px}
+.btn.danger{color:var(--danger)}
+.btn svg{width:18px;height:18px}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+
+.orgrow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.orgrow label{flex:1 1 280px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:14px;font-weight:600}
+label.f input,label.f select,label.f textarea{font-weight:400;height:42px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);width:100%}
+label.f textarea{height:72px;padding:8px 12px;resize:vertical}
+label.f input:focus,label.f select:focus,label.f textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.hint{font-size:13px;color:var(--muted);font-weight:400}
+
+/* Property list */
+.plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.prop{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--surface)}
+.prop:hover{border-color:var(--muted)}
+.prop[aria-current="true"]{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.prop .ic{width:40px;height:40px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-weight:800;font-stretch:72%;font-size:18px;color:var(--accent)}
+.prop .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prop .meta{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rowacts{display:flex;gap:6px}
+
+/* Locations */
+.lochead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.lochead select{height:40px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:220px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.05em;text-transform:uppercase;padding:0 8px 8px;border-bottom:1px solid var(--line)}
+td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.acts{text-align:right;white-space:nowrap}
+.empty{color:var(--muted);text-align:center;padding:28px 10px}
+.empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+
+.missing{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;border-radius:10px;background:var(--warn-soft);color:var(--warn);margin-top:18px;font-weight:500}
+
+dialog{border:0;border-radius:14px;padding:0;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);width:min(480px,calc(100% - 24px))}
+dialog::backdrop{background:rgba(10,14,20,.45)}
+.dlg{padding:22px;display:flex;flex-direction:column;gap:14px}
+.dlg h2{margin:0;font-size:22px;font-stretch:80%}
+.dlg p{margin:-6px 0 0;color:var(--muted)}
+.dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+.err{color:var(--danger);font-size:14px;min-height:1.3em}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;opacity:0;transition:.2s;pointer-events:none;z-index:60;font-weight:500}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<script src="shell.js" data-page="settings"></script>
+<div class="wrap">
+  <h1>Settings</h1>
+  <p class="sub">Manage the properties and locations used across the asset register.</p>
+  <div class="banner" id="banner" role="status"></div>
+
+  <section class="card" aria-labelledby="genH">
+    <div class="card-h"><div><h2 id="genH">General</h2><p>Printed on QR tags for assets that don’t have a property set.</p></div></div>
+    <form class="orgrow" id="orgForm">
+      <label class="f">Organization name<input id="orgName" autocomplete="organization" placeholder="e.g. PLUD Hospitality Group"></label>
+      <button class="btn primary" type="submit" id="orgSave">Save</button>
+    </form>
+  </section>
+
+  <div id="missing"></div>
+
+  <div class="grid">
+    <section class="card" aria-labelledby="propH">
+      <div class="card-h">
+        <div><h2 id="propH">Properties</h2><p id="propSub">Hotels, resorts, offices or sites.</p></div>
+        <button class="btn primary" type="button" id="addProp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add property</button>
+      </div>
+      <ul class="plist" id="plist"></ul>
+    </section>
+
+    <section class="card" aria-labelledby="locH">
+      <div class="card-h">
+        <div><h2 id="locH">Locations</h2><p>Rooms or areas within each property.</p></div>
+        <button class="btn primary" type="button" id="addLoc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add location</button>
+      </div>
+      <div class="lochead"><label class="hint" for="locProp">Showing</label><select id="locProp"></select></div>
+      <div id="ltable"></div>
+    </section>
+  </div>
+</div>
+
+<dialog id="editDlg" aria-labelledby="edTitle">
+  <form class="dlg" id="editForm" novalidate>
+    <h2 id="edTitle"></h2>
+    <p id="edLead"></p>
+    <label class="f" id="edNameWrap"><span id="edNameLabel">Name</span><input id="edName" autocomplete="off" required></label>
+    <label class="f" id="edPropWrap">Property<select id="edProp"></select></label>
+    <label class="f" id="edAddrWrap">Address <span class="hint">(optional)</span><textarea id="edAddr"></textarea></label>
+    <div class="err" id="edErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn" type="button" id="edCancel">Cancel</button><button class="btn primary" type="submit" id="edOk">Save</button></div>
+  </form>
+</dialog>
+<dialog id="confirmDlg" aria-labelledby="cfTitle">
+  <form class="dlg" id="confirmForm">
+    <h2 id="cfTitle"></h2>
+    <p id="cfMsg"></p>
+    <div class="dlg-actions"><button class="btn" type="button" id="cfCancel">Cancel</button><button class="btn primary" type="submit" id="cfOk">OK</button></div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+const SUPABASE_URL = "https://etiqbblpenjqdkkmdbjm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_RioLcLmP4qQxil5OXO8p-A_OjD9lY5D";
+const BASE_PROPS = ["Virgin Beach Resort","Z Hostel"];
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pl = (n, w, many) => n + " " + (n === 1 ? w : (many || w + "s"));
+const same = (a, b) => String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+const clean = s => String(s || "").replace(/\s+/g, " ").trim();
+const newId = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+function toast(m){ const t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2600); }
+function banner(m){ const b = $("#banner"); b.textContent = m || ""; b.classList.toggle("show", !!m); }
+
+let sb = null, me = null, myName = "", assets = [], catalog = { properties:[], locations:[] }, org = "", selProp = "";
+
+/* ---------- Data ---------- */
+const rowToAsset = r => Object.assign({}, r.data, { id: r.id });
+async function loadAll(){
+  const [a, s] = await Promise.all([ sb.from("assets").select("id,data"), sb.from("settings").select("key,data") ]);
+  if(a.error || s.error){ banner("Settings couldn’t be loaded: " + (a.error || s.error).message); return false; }
+  assets = a.data.map(rowToAsset);
+  const rows = Object.fromEntries(s.data.map(r => [r.key, r.data]));
+  org = (rows.main && rows.main.org) || "";
+  if(rows.catalog){ catalog = { properties: rows.catalog.properties || [], locations: rows.catalog.locations || [] }; }
+  else { await seedCatalog(); }
+  banner(""); render(); return true;
+}
+// First run: build the lists from the default properties and whatever assets already use
+async function seedCatalog(){
+  const props = []; const addP = n => { n = clean(n); if(n && !props.some(p => same(p.name, n))) props.push({ id:newId(), name:n, address:"" }); };
+  BASE_PROPS.forEach(addP); assets.forEach(a => addP(a.property));
+  const locs = [];
+  assets.forEach(a => { const n = clean(a.location), p = clean(a.property); if(n && !locs.some(l => same(l.name, n) && same(l.property, p))) locs.push({ id:newId(), name:n, property:p }); });
+  catalog = { properties: props, locations: locs };
+  const r = await sb.from("settings").upsert({ key:"catalog", data:catalog });
+  if(r.error) banner("Couldn’t save the starting lists: " + r.error.message);
+}
+// Read the latest lists, apply a change, save, so two people editing don’t overwrite each other
+async function mutate(fn){
+  const cur = await sb.from("settings").select("data").eq("key","catalog").maybeSingle();
+  if(cur.error){ toast("Couldn’t save: " + cur.error.message); return false; }
+  const c = cur.data ? { properties: cur.data.data.properties || [], locations: cur.data.data.locations || [] } : catalog;
+  const msg = fn(c); if(msg){ toast(msg); return false; }
+  const r = await sb.from("settings").upsert({ key:"catalog", data:c });
+  if(r.error){ toast("Couldn’t save: " + r.error.message); return false; }
+  catalog = c; render(); return true;
+}
+// Rename a property or location on every asset that uses it
+async function cascade(match, change, note){
+  const hit = assets.filter(match);
+  if(!hit.length) return 0;
+  const now = Date.now();
+  const rows = hit.map(a => { const d = Object.assign({}, a); change(d); d.updatedAt = now; d.history = (a.history || []).concat([{ t:now, text:note, by:myName }]).slice(-100); delete d.id; return { id:a.id, data:d }; });
+  for(let i = 0; i < rows.length; i += 200){
+    const r = await sb.from("assets").upsert(rows.slice(i, i + 200), { onConflict:"id" });
+    if(r.error){ toast("Some assets couldn’t be updated: " + r.error.message); break; }
+  }
+  const fresh = await sb.from("assets").select("id,data"); if(fresh.data) assets = fresh.data.map(rowToAsset);
+  return hit.length;
+}
+
+/* ---------- Render ---------- */
+const propAssets = name => assets.filter(a => same(a.property, name)).length;
+const propLocs = name => catalog.locations.filter(l => same(l.property, name)).length;
+const locAssets = l => assets.filter(a => same(a.location, l.name) && same(a.property, l.property)).length;
+
+function render(){
+  $("#orgName").value = document.activeElement === $("#orgName") ? $("#orgName").value : org;
+  const props = catalog.properties.slice().sort((a,b) => a.name.localeCompare(b.name));
+  if(selProp && !props.some(p => same(p.name, selProp))) selProp = "";
+  $("#propSub").textContent = props.length ? pl(props.length, "property", "properties") + ". Select one to see its locations." : "Hotels, resorts, offices or sites.";
+  $("#plist").innerHTML = props.length ? props.map(p => {
+    const n = propAssets(p.name), l = propLocs(p.name);
+    return '<li class="prop" data-prop="'+esc(p.id)+'" tabindex="0"'+(same(selProp, p.name) ? ' aria-current="true"' : '')+'>'+
+      '<span class="ic" aria-hidden="true">'+esc(p.name.slice(0,1).toUpperCase())+'</span>'+
+      '<span style="min-width:0"><div class="nm">'+esc(p.name)+'</div><div class="meta">'+pl(n,"asset")+' · '+pl(l,"location")+(p.address ? ' · '+esc(p.address) : '')+'</div></span>'+
+      '<span class="rowacts"><button class="btn small" type="button" data-editprop="'+esc(p.id)+'">Edit</button><button class="btn small danger" type="button" data-delprop="'+esc(p.id)+'" aria-label="Delete '+esc(p.name)+'">Delete</button></span></li>';
+  }).join("") : '<li class="empty"><b>No properties yet</b>Add your first property, like a resort or hostel.</li>';
+
+  $("#locProp").innerHTML = '<option value="">All properties</option>' + props.map(p => '<option'+(same(selProp, p.name) ? ' selected' : '')+'>'+esc(p.name)+'</option>').join("") +
+    (catalog.locations.some(l => !l.property) ? '<option value="__none"'+(selProp === "__none" ? ' selected' : '')+'>No property</option>' : '');
+  const locs = catalog.locations.filter(l => !selProp || (selProp === "__none" ? !l.property : same(l.property, selProp)))
+    .sort((a,b) => (a.property || "").localeCompare(b.property || "") || a.name.localeCompare(b.name));
+  const showProp = !selProp;
+  $("#ltable").innerHTML = locs.length ? '<table><thead><tr><th>Location</th>'+(showProp ? '<th>Property</th>' : '')+'<th class="num">Assets</th><th></th></tr></thead><tbody>'+
+    locs.map(l => '<tr><td><b>'+esc(l.name)+'</b></td>'+(showProp ? '<td>'+esc(l.property || "No property")+'</td>' : '')+'<td class="num">'+locAssets(l)+'</td>'+
+      '<td class="acts"><button class="btn small" type="button" data-editloc="'+esc(l.id)+'">Edit</button> <button class="btn small danger" type="button" data-delloc="'+esc(l.id)+'" aria-label="Delete '+esc(l.name)+'">Delete</button></td></tr>').join("")+'</tbody></table>'
+    : '<div class="empty"><b>No locations'+(selProp && selProp !== "__none" ? ' at ' + esc(selProp) : '')+' yet</b>Add rooms or areas such as Front Desk, Kitchen or Villa 3.</div>';
+
+  // Names used by assets but missing from the lists
+  const missP = [...new Set(assets.map(a => clean(a.property)).filter(n => n && !catalog.properties.some(p => same(p.name, n))))];
+  const missL = []; assets.forEach(a => { const n = clean(a.location), p = clean(a.property); if(n && !catalog.locations.some(l => same(l.name, n) && same(l.property, p)) && !missL.some(m => same(m.name, n) && same(m.property, p))) missL.push({ name:n, property:p }); });
+  $("#missing").innerHTML = (missP.length || missL.length) ? '<div class="missing"><span>Your assets use '+[missP.length ? pl(missP.length, "property", "properties") : "", missL.length ? pl(missL.length, "location") : ""].filter(Boolean).join(" and ")+' that aren’t in these lists.</span><button class="btn small" type="button" id="addMissing">Add them</button></div>' : "";
+}
+
+/* ---------- Dialogs ---------- */
+function confirmBox(title, msg, okLabel, danger){
+  return new Promise(res => {
+    const d = $("#confirmDlg"); $("#cfTitle").textContent = title; $("#cfMsg").textContent = msg;
+    $("#cfOk").textContent = okLabel || "OK"; $("#cfOk").className = "btn " + (danger ? "danger" : "primary");
+    const done = v => { d.close(); off(); res(v); };
+    const ok = e => { e.preventDefault(); done(true); }, no = () => done(false), cancel = () => { off(); res(false); };
+    function off(){ $("#confirmForm").removeEventListener("submit", ok); $("#cfCancel").removeEventListener("click", no); d.removeEventListener("cancel", cancel); }
+    $("#confirmForm").addEventListener("submit", ok); $("#cfCancel").addEventListener("click", no); d.addEventListener("cancel", cancel);
+    d.showModal();
+  });
+}
+let edit = null; // { kind:"prop"|"loc", item }
+function openEdit(kind, item){
+  edit = { kind, item };
+  const isP = kind === "prop";
+  $("#edTitle").textContent = item ? (isP ? "Edit property" : "Edit location") : (isP ? "Add property" : "Add location");
+  $("#edLead").textContent = isP ? "A hotel, resort, office or site that owns assets." : "A room or area inside a property.";
+  $("#edNameLabel").textContent = isP ? "Property name" : "Location name";
+  $("#edName").placeholder = isP ? "e.g. Virgin Beach Resort" : "e.g. Front Desk";
+  $("#edName").value = item ? item.name : "";
+  $("#edAddrWrap").hidden = !isP; $("#edAddr").value = isP && item ? (item.address || "") : "";
+  $("#edPropWrap").hidden = isP;
+  if(!isP){
+    const props = catalog.properties.slice().sort((a,b) => a.name.localeCompare(b.name));
+    const cur = item ? item.property : (selProp && selProp !== "__none" ? selProp : (props[0] || {}).name || "");
+    $("#edProp").innerHTML = props.map(p => '<option'+(same(p.name, cur) ? ' selected' : '')+'>'+esc(p.name)+'</option>').join("") + '<option value=""'+(!cur ? ' selected' : '')+'>No property</option>';
+  }
+  $("#edErr").textContent = ""; $("#edOk").disabled = false;
+  $("#editDlg").showModal(); setTimeout(() => $("#edName").focus(), 30);
+}
+$("#edCancel").addEventListener("click", () => $("#editDlg").close());
+$("#editForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = clean($("#edName").value);
+  if(!name){ $("#edErr").textContent = "Enter a name."; $("#edName").focus(); return; }
+  if(name.length > 80){ $("#edErr").textContent = "Keep the name under 80 characters."; return; }
+  $("#edOk").disabled = true;
+  const { kind, item } = edit;
+  if(kind === "prop"){
+    const address = clean($("#edAddr").value);
+    if(catalog.properties.some(p => same(p.name, name) && (!item || p.id !== item.id))){ $("#edErr").textContent = "A property with that name already exists."; $("#edOk").disabled = false; return; }
+    const old = item ? item.name : null, renamed = item && old !== name, used = renamed ? propAssets(old) : 0;
+    if(renamed && used && !(await confirmBox("Rename property?", "“" + old + "” is used by " + pl(used, "asset") + ". They’ll all be renamed to “" + name + "”, and their QR tags will show the new name.", "Rename"))){ $("#edOk").disabled = false; return; }
+    const ok = await mutate(c => {
+      if(item){ const p = c.properties.find(x => x.id === item.id); if(!p) return "That property was deleted by someone else."; p.name = name; p.address = address; if(renamed) c.locations.forEach(l => { if(same(l.property, old)) l.property = name; }); }
+      else c.properties.push({ id:newId(), name, address });
+    });
+    if(!ok){ $("#edOk").disabled = false; return; }
+    if(renamed){ const n = await cascade(a => same(a.property, old), d => { d.property = name; }, "Property renamed from " + old + " to " + name); if(same(selProp, old)) selProp = name; render(); toast(n ? "Renamed, and updated " + pl(n, "asset") : "Property renamed"); }
+    else toast(item ? "Property saved" : name + " added");
+  } else {
+    const prop = $("#edProp").value;
+    if(catalog.locations.some(l => same(l.name, name) && same(l.property, prop) && (!item || l.id !== item.id))){ $("#edErr").textContent = "That location already exists" + (prop ? " at " + prop : "") + "."; $("#edOk").disabled = false; return; }
+    const changed = item && (item.name !== name || !same(item.property, prop)), used = changed ? locAssets(item) : 0;
+    if(changed && used && !(await confirmBox("Update location?", pl(used, "asset") + " at “" + item.name + "” will move to “" + name + "”" + (prop ? " at " + prop : "") + ".", "Update"))){ $("#edOk").disabled = false; return; }
+    const before = item ? { name:item.name, property:item.property } : null;
+    const ok = await mutate(c => {
+      if(item){ const l = c.locations.find(x => x.id === item.id); if(!l) return "That location was deleted by someone else."; l.name = name; l.property = prop; }
+      else c.locations.push({ id:newId(), name, property:prop });
+    });
+    if(!ok){ $("#edOk").disabled = false; return; }
+    if(changed && used){ const n = await cascade(a => same(a.location, before.name) && same(a.property, before.property), d => { d.location = name; d.property = prop || d.property; }, "Location renamed from " + before.name + " to " + name); render(); toast("Location updated on " + pl(n, "asset")); }
+    else toast(item ? "Location saved" : name + " added");
+  }
+  $("#editDlg").close();
+});
+
+/* ---------- Events ---------- */
+$("#addProp").addEventListener("click", () => openEdit("prop", null));
+$("#addLoc").addEventListener("click", () => { if(!catalog.properties.length){ toast("Add a property first."); return; } openEdit("loc", null); });
+$("#locProp").addEventListener("change", e => { selProp = e.target.value; render(); });
+$("#plist").addEventListener("click", async e => {
+  const ed = e.target.closest("[data-editprop]"), del = e.target.closest("[data-delprop]");
+  if(ed){ e.stopPropagation(); openEdit("prop", catalog.properties.find(p => p.id === ed.dataset.editprop)); return; }
+  if(del){
+    e.stopPropagation();
+    const p = catalog.properties.find(x => x.id === del.dataset.delprop); if(!p) return;
+    const n = propAssets(p.name), l = propLocs(p.name);
+    if(n){ await confirmBox("Can’t delete " + p.name, pl(n, "asset") + " still belong to this property. Transfer them to another property first (Register → open asset → Transfer).", "OK"); return; }
+    if(!(await confirmBox("Delete " + p.name + "?", l ? "Its " + pl(l, "location") + " will be deleted too." : "This removes it from the list.", "Delete", true))) return;
+    if(await mutate(c => { c.properties = c.properties.filter(x => x.id !== p.id); c.locations = c.locations.filter(x => !same(x.property, p.name)); })){ if(same(selProp, p.name)) selProp = ""; render(); toast(p.name + " deleted"); }
+    return;
+  }
+  const li = e.target.closest("[data-prop]");
+  if(li){ const p = catalog.properties.find(x => x.id === li.dataset.prop); selProp = same(selProp, p.name) ? "" : p.name; render(); }
+});
+$("#plist").addEventListener("keydown", e => { const li = e.target.closest && e.target.closest("[data-prop]"); if(li && e.target === li && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); li.click(); } });
+$("#ltable").addEventListener("click", async e => {
+  const ed = e.target.closest("[data-editloc]"), del = e.target.closest("[data-delloc]");
+  if(ed){ openEdit("loc", catalog.locations.find(l => l.id === ed.dataset.editloc)); return; }
+  if(del){
+    const l = catalog.locations.find(x => x.id === del.dataset.delloc); if(!l) return;
+    const n = locAssets(l);
+    if(n){ await confirmBox("Can’t delete " + l.name, pl(n, "asset") + " are still at this location. Move them first (Register → open asset → Move), or edit the location to rename it.", "OK"); return; }
+    if(!(await confirmBox("Delete " + l.name + "?", "This removes it from the list" + (l.property ? " for " + l.property : "") + ".", "Delete", true))) return;
+    if(await mutate(c => { c.locations = c.locations.filter(x => x.id !== l.id); })) toast(l.name + " deleted");
+  }
+});
+document.addEventListener("click", async e => {
+  if(e.target.id !== "addMissing") return;
+  e.target.disabled = true;
+  const ok = await mutate(c => {
+    assets.forEach(a => {
+      const p = clean(a.property), n = clean(a.location);
+      if(p && !c.properties.some(x => same(x.name, p))) c.properties.push({ id:newId(), name:p, address:"" });
+      if(n && !c.locations.some(x => same(x.name, n) && same(x.property, p))) c.locations.push({ id:newId(), name:n, property:p });
+    });
+  });
+  if(ok) toast("Added to the lists");
+});
+$("#orgForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = clean($("#orgName").value); $("#orgSave").disabled = true;
+  const r = await sb.from("settings").upsert({ key:"main", data:{ org:name } });
+  $("#orgSave").disabled = false;
+  if(r.error) toast("Couldn’t save: " + r.error.message); else { org = name; toast("Organization name saved"); }
+});
+
+/* ---------- Auth ---------- */
+let signingOut = false;
+const toLogin = reason => location.replace("login.html?return=settings" + (reason ? "&reason=" + reason : ""));
+async function start(){
+  if(!window.supabase || typeof window.supabase.createClient !== "function"){ document.documentElement.classList.remove("booting"); banner("The sign-in service couldn’t load. Check your internet connection and reload the page."); return; }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const session = (await sb.auth.getSession()).data.session;
+  if(!session){ toLogin(); return; }
+  me = session.user;
+  const ok = await sb.rpc("is_staff");
+  if(ok.error || !ok.data){ toLogin(); return; }
+  const prof = await sb.from("staff").select("username,must_change_password").eq("email", (me.email || "").toLowerCase()).maybeSingle();
+  if(prof.data && prof.data.must_change_password){ toLogin(); return; }
+  myName = (prof.data && prof.data.username) || me.email;
+  $("#who").textContent = myName;
+  document.documentElement.classList.remove("booting");
+  sb.auth.onAuthStateChange((event, s) => { if(!s) setTimeout(() => toLogin(signingOut ? "signedout" : ""), 0); });
+  await loadAll();
+  let t = 0;
+  sb.channel("settings-page")
+    .on("postgres_changes", { event:"*", schema:"public", table:"settings" }, () => { clearTimeout(t); t = setTimeout(loadAll, 300); })
+    .on("postgres_changes", { event:"*", schema:"public", table:"assets" }, () => { clearTimeout(t); t = setTimeout(loadAll, 300); })
+    .subscribe();
+}
+$("#signOut").addEventListener("click", async () => { signingOut = true; await sb.auth.signOut(); toLogin("signedout"); });
+start();
+})();
+</script>
+</body>
+</html>

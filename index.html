@@ -56,6 +56,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .nav a:hover{background:var(--surface);color:var(--ink)}
 .nav a[aria-current="page"]{background:var(--ink);color:var(--bg)}
 [hidden]{display:none!important}
+label.f a{color:var(--accent);font-weight:600}
 .photo-label{font-size:14px;font-weight:600}
 .photo-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .photo-prev{width:96px;height:96px;border-radius:10px;border:1px dashed var(--line);background:var(--surface-2);display:grid;place-items:center;overflow:hidden;color:var(--muted);font-size:12px;font-weight:400;flex:none}
@@ -308,7 +309,7 @@ label.f textarea{height:76px;padding:8px 10px;resize:vertical}
     <p class="lead" id="formLead">A QR tag is created automatically.</p>
     <div class="grid2">
       <div class="fs-h">Identification</div>
-      <label class="f full">Property<input name="property" list="propList" placeholder="e.g. Virgin Beach Resort" autocomplete="off"></label>
+      <label class="f full">Property<select name="property" id="fProperty"></select></label>
       <label class="f full">Asset name<input name="name" required placeholder="e.g. Laptop 13&quot;" autocomplete="off"></label>
       <label class="f">Category<input name="category" list="catList" placeholder="e.g. IT / Electronics" autocomplete="off"></label>
       <label class="f">Sub-category<input name="subcategory" list="subList" placeholder="e.g. Laptop" autocomplete="off"></label>
@@ -331,7 +332,7 @@ label.f textarea{height:76px;padding:8px 10px;resize:vertical}
       <label class="f">Assigned to<input name="assignee" list="whoList" autocomplete="off"></label>
       <label class="f">Expected return<input name="dueDate" type="date"></label>
       <label class="f">Department<input name="department" list="deptList" placeholder="e.g. Finance" autocomplete="off"></label>
-      <label class="f full">Location<input name="location" list="locList" placeholder="e.g. 3F IT room" autocomplete="off"></label>
+      <label class="f full">Location<select name="location" id="fLocation"></select><span class="dim" style="font-weight:400;font-size:13px">Missing a property or location? <a href="settings.html">Add it in Settings</a>.</span></label>
       <div class="fs-h">Purchase and value</div>
       <label class="f">Purchase date<input name="purchaseDate" type="date"></label>
       <label class="f">Supplier<input name="supplier" autocomplete="off"></label>
@@ -419,7 +420,7 @@ const LS_KEY = "asset-register-v1";
 const FIELDS = ["property","name","category","subcategory","condition","manufacturer","model","serial","status","assignee","dueDate","department","location","purchaseDate","supplier","invoice","value","usefulLife","warrantyEnd","lastService","nextService","notes"];
 
 let assets = [];
-let settings = { org: "" };
+let settings = { org: "" }, catalog = { properties: [], locations: [] };
 let mode = "loading"; // loading | db | local
 let db = null, downloads = null, canWrite = true, loaded = false;
 let filter = { q:"", status:"all", category:"all" };
@@ -477,8 +478,9 @@ async function loadAll(){
   const res = await sb.from("assets").select("id,data").order("id");
   if(res.error){ loaded = true; banner("The inventory couldn’t be loaded: " + res.error.message); renderAll(); return; }
   assets = res.data.map(rowToAsset);
-  const st = await sb.from("settings").select("data").eq("key","main").maybeSingle();
-  if(st.data) settings = Object.assign({org:""}, st.data.data);
+  const st = await sb.from("settings").select("key,data");
+  (st.data || []).forEach(r => { if(r.key === "main") settings = Object.assign({org:""}, r.data); if(r.key === "catalog") catalog = { properties: r.data.properties || [], locations: r.data.locations || [] }; });
+  if(!st.error && !(st.data || []).some(r => r.key === "catalog")) seedCatalog();
   loaded = true; banner(""); renderAll(); routeFromHash();
 }
 function subscribe(){
@@ -491,6 +493,7 @@ function subscribe(){
     })
     .on("postgres_changes", { event:"*", schema:"public", table:"settings" }, p => {
       if(p.new && p.new.key === "main"){ settings = Object.assign({org:""}, p.new.data); renderAll(); }
+      if(p.new && p.new.key === "catalog"){ catalog = { properties: p.new.data.properties || [], locations: p.new.data.locations || [] }; renderAll(); }
     })
     .subscribe();
 }
@@ -636,8 +639,8 @@ function renderCatFilter(){
   sel.innerHTML = '<option value="all">All categories</option>' + used.map(c => '<option'+(c===cur?' selected':'')+'>'+esc(c)+'</option>').join("");
   if(cur !== "all" && !used.includes(cur)){ filter.category = "all"; sel.value = "all"; }
   $("#catList").innerHTML = categories().map(c => '<option value="'+esc(c)+'">').join("");
-  $("#propList").innerHTML = [...new Set(BASE_PROPS.concat(assets.map(a=>a.property).filter(Boolean)))].map(c => '<option value="'+esc(c)+'">').join("");
-  $("#locList").innerHTML = [...new Set(assets.map(a=>a.location).filter(Boolean))].map(c => '<option value="'+esc(c)+'">').join("");
+  $("#propList").innerHTML = propNames().map(c => '<option value="'+esc(c)+'">').join("");
+  setLocList("");
   $("#whoList").innerHTML = [...new Set(assets.map(a=>a.assignee).filter(Boolean))].map(c => '<option value="'+esc(c)+'">').join("");
   $("#mfrList").innerHTML = [...new Set(assets.map(a=>a.manufacturer).filter(Boolean))].map(c => '<option value="'+esc(c)+'">').join("");
   $("#deptList").innerHTML = [...new Set(assets.map(a=>a.department).filter(Boolean))].map(c => '<option value="'+esc(c)+'">').join("");
@@ -904,6 +907,40 @@ function updateSubList(){
 }
 $("#assetForm").elements.category.addEventListener("input", updateSubList);
 
+/* ---------- Properties & locations (managed in Settings) ---------- */
+// First run: build the lists from the default properties and the assets already recorded
+async function seedCatalog(){
+  const props = [], locs = [], nid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const tidy = x => String(x || "").replace(/\s+/g, " ").trim();
+  BASE_PROPS.concat(assets.map(a => a.property)).forEach(n => { n = tidy(n); if(n && !props.some(p => sameName(p.name, n))) props.push({ id:nid(), name:n, address:"" }); });
+  assets.forEach(a => { const n = tidy(a.location), p = tidy(a.property); if(n && !locs.some(l => sameName(l.name, n) && sameName(l.property, p))) locs.push({ id:nid(), name:n, property:p }); });
+  catalog = { properties: props, locations: locs };
+  const r = await sb.from("settings").upsert({ key:"catalog", data: catalog });
+  if(r.error) console.warn("Couldn’t save starting lists", r.error);
+  renderAll();
+}
+const sameName = (x, y) => String(x || "").trim().toLowerCase() === String(y || "").trim().toLowerCase();
+function propNames(){
+  const list = catalog.properties.length ? catalog.properties.map(p => p.name) : BASE_PROPS.slice();
+  return [...new Set(list)].sort((x, y) => x.localeCompare(y));
+}
+function locNames(prop){
+  return [...new Set(catalog.locations.filter(l => !prop || sameName(l.property, prop)).map(l => l.name))].sort((x, y) => x.localeCompare(y));
+}
+function setLocList(prop){ $("#locList").innerHTML = locNames(prop).map(c => '<option value="'+esc(c)+'">').join(""); }
+function fillProperty(cur){
+  const names = propNames(), extra = cur && !names.some(n => sameName(n, cur)) ? [cur] : [];
+  $("#fProperty").innerHTML = '<option value="">Choose a property</option>' + names.concat(extra).map(n => '<option value="'+esc(n)+'">'+esc(n)+(extra.includes(n) ? " (not in Settings)" : "")+'</option>').join("");
+  $("#fProperty").value = cur || "";
+}
+function fillLocation(prop, cur){
+  const names = locNames(prop), extra = cur && !names.some(n => sameName(n, cur)) ? [cur] : [];
+  $("#fLocation").innerHTML = '<option value="">'+(names.length ? "Choose a location" : prop ? "No locations for this property yet" : "Choose a property first")+'</option>' +
+    names.concat(extra).map(n => '<option value="'+esc(n)+'">'+esc(n)+(extra.includes(n) ? " (not in Settings)" : "")+'</option>').join("");
+  $("#fLocation").value = cur || "";
+}
+$("#fProperty").addEventListener("change", e => { const keep = $("#fLocation").value; fillLocation(e.target.value, locNames(e.target.value).some(n => sameName(n, keep)) ? keep : ""); });
+
 function openForm(id){
   editingId = id || null;
   const f = $("#assetForm"); f.reset(); $("#formErr").textContent = "";
@@ -911,6 +948,7 @@ function openForm(id){
   $("#formTitle").textContent = a ? "Edit " + a.id : "Add asset";
   $("#formLead").textContent = a ? "Changes are saved to the asset’s record." : "It will be tagged " + nextId() + ". A QR tag is created automatically.";
   $("#formSubmit").textContent = a ? "Save changes" : "Add asset";
+  fillProperty(a ? a.property : ""); fillLocation(a ? a.property : "", a ? a.location : "");
   if(a){ FIELDS.forEach(k => { if(f.elements[k]) f.elements[k].value = a[k] == null ? "" : a[k]; }); }
   formPhoto = { path: (a && a.photo) || "", file: null }; renderPhotoPrev(); updateSubList();
   $("#formDlg").showModal(); setTimeout(()=>f.elements.name.focus(), 30);
@@ -974,12 +1012,14 @@ async function act(name, id){
   } else if(name === "repaired"){
     a.status = "available"; log("Repaired and back in stock");
   } else if(name === "move"){
+    setLocList(a.property);
     const loc = await ask({ title:"Move " + a.id, input:{label:"New location", value:a.location, list:"locList"}, okLabel:"Move" });
     if(!loc || loc === a.location) return; log("Moved from " + (a.location || "no location") + " to " + loc); a.location = loc;
   } else if(name === "transfer"){
     const to = await ask({ title:"Transfer " + a.id, message:"Move this asset to another property. Currently: " + (a.property || "no property set") + ".", input:{label:"New property", value:"", list:"propList"}, okLabel:"Next" });
     if(!to) return;
     if(to === a.property){ toast("It’s already at " + to + "."); return; }
+    setLocList(to);
     const loc = await ask({ title:"Location at " + to, message:"Where will it be kept? Leave blank if not known yet.", input:{label:"New location (optional)", value:"", list:"locList"}, okLabel:"Transfer" });
     if(loc === null) return;
     log("Transferred from " + (a.property || "no property") + " to " + to + (loc ? ", " + loc : ""));
