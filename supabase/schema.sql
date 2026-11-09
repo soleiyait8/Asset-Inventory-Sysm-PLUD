@@ -4,6 +4,7 @@
 
 create table public.staff (
   email text primary key check (email = lower(email)),
+  username text not null unique check (username ~ '^[a-z0-9._-]{2,40}$'),
   name text,
   added_at timestamptz not null default now()
 );
@@ -58,3 +59,6 @@ grant select, insert, update, delete on public.assets to authenticated;
 grant select, insert, update on public.settings to authenticated;
 
 alter publication supabase_realtime add table public.assets, public.settings;
+
+-- Staff sign in with a username. The "username-login" Edge Function
+-- (supabase/functions/username-login) looks up the email server-side.

@@ -158,8 +158,8 @@ button,input{font:inherit;color:inherit}
         <p class="lead">Use your staff account to open the asset register.</p>
         <div class="notice" id="signinNotice" role="alert" hidden></div>
         <div class="field">
-          <label for="email">Email</label>
-          <input id="email" type="email" autocomplete="username" inputmode="email" placeholder="you@example.com" required>
+          <label for="username">Username</label>
+          <input id="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="e.g. jdelacruz" required>
         </div>
         <div class="field">
           <label for="password">Password <button type="button" class="link" id="toForgot">Forgot password?</button></label>
@@ -177,11 +177,11 @@ button,input{font:inherit;color:inherit}
       <form data-view="forgot" id="forgotForm" novalidate hidden>
         <button type="button" class="link back" data-goto="signin">‹ Back to sign in</button>
         <h1>Reset password</h1>
-        <p class="lead">Enter your staff email and we’ll send you a link to set a new password.</p>
+        <p class="lead">Enter your username and we’ll send a link to set a new password to the email on your account.</p>
         <div class="notice" id="forgotNotice" role="alert" hidden></div>
         <div class="field">
-          <label for="forgotEmail">Email</label>
-          <input id="forgotEmail" type="email" autocomplete="username" inputmode="email" placeholder="you@example.com" required>
+          <label for="forgotUser">Username</label>
+          <input id="forgotUser" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="e.g. jdelacruz" required>
         </div>
         <button class="btn primary" type="submit" id="forgotBtn"><span class="spinner"></span><span>Send reset link</span></button>
       </form>
@@ -189,7 +189,7 @@ button,input{font:inherit;color:inherit}
       <!-- Reset link sent -->
       <div data-view="sent" hidden>
         <h1>Check your email</h1>
-        <p class="lead">If <strong id="sentEmail"></strong> has a staff account, a reset link is on its way. Open it on this device to set a new password.</p>
+        <p class="lead">If <strong id="sentUser"></strong> is a staff username, a reset link is on its way to the email on that account. Open it on this device to set a new password.</p>
         <p class="hint">Nothing after a few minutes? Check your spam folder, or ask your administrator.</p>
         <button class="btn" type="button" data-goto="signin" style="margin-top:22px">Back to sign in</button>
       </div>
@@ -261,7 +261,15 @@ function show(view){
 }
 function notice(id, msg, kind){ const el = $(id); if(!msg){ el.hidden = true; return; } el.className = "notice " + (kind || "err"); el.textContent = msg; el.hidden = false; }
 function busy(btn, on){ btn.disabled = on; btn.classList.toggle("busy", on); }
-const validEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const normUser = v => v.trim().toLowerCase();
+const validUser = v => /^[a-z0-9._-]{2,40}$/.test(v);
+async function callLogin(payload){
+  const { data, error } = await sb.functions.invoke("username-login", { body: payload });
+  if(!error) return { data };
+  let code = "network";
+  try{ const j = await error.context.json(); code = j.error || code; }catch(e){}
+  return { code };
+}
 
 /* Show / hide password */
 document.querySelectorAll("[data-toggle]").forEach(b => b.addEventListener("click", () => {
@@ -274,7 +282,7 @@ document.querySelectorAll("[data-toggle]").forEach(b => b.addEventListener("clic
   $(i).addEventListener("keydown", f); $(i).addEventListener("keyup", f); $(i).addEventListener("blur", () => $(w).hidden = true);
 });
 document.querySelectorAll("[data-goto]").forEach(b => b.addEventListener("click", () => show(b.dataset.goto)));
-$("#toForgot").addEventListener("click", () => { $("#forgotEmail").value = $("#email").value.trim(); notice("#forgotNotice"); show("forgot"); });
+$("#toForgot").addEventListener("click", () => { $("#forgotUser").value = normUser($("#username").value); notice("#forgotNotice"); show("forgot"); });
 
 if(!window.supabase || typeof window.supabase.createClient !== "function"){ show("offline"); return; }
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -298,35 +306,38 @@ sb.auth.onAuthStateChange((event) => {
 /* Sign in */
 $("#signinForm").addEventListener("submit", async e => {
   e.preventDefault(); notice("#signinNotice");
-  const email = $("#email").value.trim(), password = $("#password").value;
-  $("#email").setAttribute("aria-invalid", String(!validEmail(email)));
+  const username = normUser($("#username").value), password = $("#password").value;
+  $("#username").setAttribute("aria-invalid", String(!validUser(username)));
   $("#password").setAttribute("aria-invalid", String(!password));
-  if(!validEmail(email)){ notice("#signinNotice", "Enter a valid email address."); $("#email").focus(); return; }
+  if(!username){ notice("#signinNotice", "Enter your username."); $("#username").focus(); return; }
+  if(!validUser(username)){ notice("#signinNotice", "Usernames use only letters, numbers, dots, hyphens and underscores."); $("#username").focus(); return; }
   if(!password){ notice("#signinNotice", "Enter your password."); $("#password").focus(); return; }
   const btn = $("#signinBtn"); busy(btn, true);
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if(error){
+  const r = await callLogin({ action:"login", username, password });
+  if(r.code){
     busy(btn, false);
-    const m = error.message || "";
-    if(/invalid login|invalid credentials/i.test(m)) notice("#signinNotice", "That email and password don’t match. Check them and try again.");
-    else if(/not confirmed/i.test(m)) notice("#signinNotice", "This account hasn’t been confirmed yet. Ask your administrator to confirm it.");
-    else if(/rate|too many/i.test(m)) notice("#signinNotice", "Too many attempts. Wait a minute, then try again.");
-    else notice("#signinNotice", "Couldn’t sign in: " + m);
+    if(r.code === "invalid_credentials") notice("#signinNotice", "That username and password don’t match. Check them and try again.");
+    else if(r.code === "not_confirmed") notice("#signinNotice", "This account hasn’t been confirmed yet. Ask your administrator to confirm it.");
+    else if(r.code === "rate_limited") notice("#signinNotice", "Too many attempts. Wait a minute, then try again.");
+    else notice("#signinNotice", "Couldn’t reach the sign-in service. Check your connection and try again.");
     $("#password").select(); return;
   }
+  const { data, error } = await sb.auth.setSession({ access_token: r.data.access_token, refresh_token: r.data.refresh_token });
+  if(error || !data.session){ busy(btn, false); notice("#signinNotice", "Signed in, but the session couldn’t be started. Try again."); return; }
   if(!(await goIfStaff(data.session))) busy(btn, false);
 });
 
 /* Forgot password */
 $("#forgotForm").addEventListener("submit", async e => {
   e.preventDefault(); notice("#forgotNotice");
-  const email = $("#forgotEmail").value.trim();
-  if(!validEmail(email)){ notice("#forgotNotice", "Enter a valid email address."); $("#forgotEmail").focus(); return; }
+  const username = normUser($("#forgotUser").value);
+  if(!validUser(username)){ notice("#forgotNotice", "Enter your username."); $("#forgotUser").focus(); return; }
   const btn = $("#forgotBtn"); busy(btn, true);
-  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: PAGE_URL });
+  const r = await callLogin({ action:"reset", username, redirectTo: PAGE_URL });
   busy(btn, false);
-  if(error && /rate|security purposes|too many/i.test(error.message || "")){ notice("#forgotNotice", "A reset link was sent recently. Wait a minute before asking for another."); return; }
-  $("#sentEmail").textContent = email; show("sent");
+  if(r.code === "rate_limited"){ notice("#forgotNotice", "A reset link was sent recently. Wait a minute before asking for another."); return; }
+  if(r.code){ notice("#forgotNotice", "Couldn’t reach the sign-in service. Check your connection and try again."); return; }
+  $("#sentUser").textContent = username; show("sent");
 });
 
 /* Set new password */

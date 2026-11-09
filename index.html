@@ -685,10 +685,10 @@ $("#assetForm").addEventListener("submit", async e => {
     a = clone(byId(editingId)); const changed = [];
     Object.keys(fields).forEach(k => { if(String(a[k]==null?"":a[k]) !== String(fields[k])) changed.push(k); });
     Object.assign(a, fields);
-    a.history = (a.history||[]).concat(changed.length ? [{t:Date.now(), text:"Edited details", by: me ? me.email : ""}] : []).slice(-100);
+    a.history = (a.history||[]).concat(changed.length ? [{t:Date.now(), text:"Edited details", by: myName}] : []).slice(-100);
     ok = await saveAsset(a);
   } else {
-    a = Object.assign({ id: nextId(), createdAt: Date.now(), history: [{t:Date.now(), text:"Added to inventory" + (fields.assignee ? " and assigned to " + fields.assignee : ""), by: me ? me.email : ""}] }, fields);
+    a = Object.assign({ id: nextId(), createdAt: Date.now(), history: [{t:Date.now(), text:"Added to inventory" + (fields.assignee ? " and assigned to " + fields.assignee : ""), by: myName}] }, fields);
     ok = await saveAsset(a, true);
   }
   $("#formSubmit").disabled = false;
@@ -697,7 +697,7 @@ $("#assetForm").addEventListener("submit", async e => {
 
 async function act(name, id){
   const src = byId(id); if(!src) return;
-  const a = clone(src); const log = text => { a.history = (a.history||[]).concat([{t:Date.now(), text, by: me ? me.email : ""}]).slice(-100); };
+  const a = clone(src); const log = text => { a.history = (a.history||[]).concat([{t:Date.now(), text, by: myName}]).slice(-100); };
   if(name === "edit") return openForm(id);
   if(name === "print") return printTags([a]);
   if(name === "download") return downloadTags([a]);
@@ -834,14 +834,17 @@ async function onSession(session){
   const uid = session ? session.user.id : null;
   if(uid === lastUid) return; lastUid = uid;
   if(!session){ if(channel){ sb.removeChannel(channel); channel = null; } goToLogin(signingOut ? "signedout" : ""); return; }
-  me = session.user; $("#who").textContent = "Signed in as " + me.email;
+  me = session.user;
   const r = await sb.rpc("is_staff");
   if(r.error || !r.data){ goToLogin(); return; }
+  const prof = await sb.from("staff").select("username,name").eq("email", (me.email || "").toLowerCase()).maybeSingle();
+  myName = (prof.data && prof.data.username) || me.email;
+  $("#who").textContent = "Signed in as " + myName + (prof.data && prof.data.name ? " (" + prof.data.name + ")" : "");
   document.documentElement.classList.remove("booting");
   mode = "db"; loaded = false; renderAll();
   await loadAll(); subscribe();
 }
-let signingOut = false;
+let signingOut = false, myName = "";
 $("#signOut").addEventListener("click", async () => { signingOut = true; await sb.auth.signOut(); goToLogin("signedout"); });
 
 /* ---------- Init ---------- */

@@ -22,7 +22,8 @@ It runs as static pages on GitHub Pages, backed by a Supabase database, with sta
 
 - **Frontend:** two pages hosted on GitHub Pages: `login.html` (sign-in and password reset) and `index.html` (the inventory). Signed-out visitors are sent to the login page; after signing in they return to where they were, including a scanned asset.
 - **Database and sign-in:** Supabase (project “Plud Asset inventory Project”).
-- **Access:** only staff can see or change anything. A person needs a Supabase account **and** their email on the `staff` list. Signed-out visitors and accounts not on the list get no data at all; this is enforced by the database (row level security), not just the page.
+- **Sign-in:** staff log in with a **username** and password. A small server function (`username-login`) looks up the matching email privately, so emails are never shown on the login page.
+- **Access:** only staff can see or change anything. A person needs a Supabase account **and** a row on the `staff` list. Signed-out visitors and accounts not on the list get no data at all; this is enforced by the database (row level security), not just the page.
 - Changes appear live on every signed-in device. Every history entry records who made it.
 
 ## Setup (one time)
@@ -37,14 +38,16 @@ In the Supabase dashboard, open **Authentication → Sign In / Providers** and t
 
 ### 3. Add staff
 For each person:
-1. **Authentication → Users → Add user → Create new user.** Enter their email and a password, and tick **Auto Confirm User**.
-2. **Table Editor → `staff` → Insert row.** Enter the same email in **lowercase**, plus their name (optional).
+1. **Authentication → Users → Add user → Create new user.** Enter their real email and a password, and tick **Auto Confirm User**. (The email is used for password reset links.)
+2. **Table Editor → `staff` → Insert row.** Enter the same email in **lowercase**, the **username** they will log in with, and their name (optional).
+
+Usernames: 2–40 characters, lowercase letters, numbers, `.` `_` `-` (for example `jdelacruz`). They are not case-sensitive at login.
 
 Or add several at once in the **SQL Editor**:
 ```sql
-insert into public.staff (email, name) values
-  ('juan.delacruz@example.com', 'Juan Dela Cruz'),
-  ('maria.santos@example.com',  'Maria Santos');
+insert into public.staff (email, username, name) values
+  ('juan.delacruz@example.com', 'jdelacruz', 'Juan Dela Cruz'),
+  ('maria.santos@example.com',  'msantos',   'Maria Santos');
 ```
 
 To remove someone’s access, delete their row from `staff` (and their user under Authentication if you like).
@@ -58,7 +61,7 @@ Without the redirect URL, “Forgot password?” links won’t return people to 
 
 ## How to use
 
-1. Open the site. You’re taken to the login page; sign in with your staff email and password. Forgot it? Use **Forgot password?** to get a reset link by email.
+1. Open the site. You’re taken to the login page; sign in with your username and password. Forgot it? Use **Forgot password?**, enter your username, and a reset link goes to the email on your account.
 2. Click **Rename** under the title to set your organization name. It prints on every tag as “Property of …”.
 3. Click **Add asset** and fill in the details. A QR tag is created automatically.
 4. Open an asset and choose **Print label** or **Download label**, or select several assets in the list and print them together.
@@ -68,12 +71,12 @@ Use **Export CSV** for reports or an offline backup.
 
 ## Database
 
-The schema is in [`supabase/schema.sql`](supabase/schema.sql) (already applied). Tables:
+The schema is in [`supabase/schema.sql`](supabase/schema.sql) and the login function in [`supabase/functions/username-login`](supabase/functions/username-login/index.ts) (both already deployed). Tables:
 
 | Table | Purpose |
 | --- | --- |
 | `assets` | One row per asset; the full record is in the `data` column (JSON). `updated_by` records the last editor. |
-| `staff` | Emails allowed to use the system. |
+| `staff` | Staff allowed to use the system: email, username, name. |
 | `settings` | App settings such as the organization name. |
 
 The key in `index.html` is Supabase’s **publishable** key, which is designed to be public. Security comes from the database rules. Never put the **secret** (service role) key in this repository.
