@@ -36,7 +36,12 @@ It runs as static pages on GitHub Pages, backed by a Supabase database, with sta
 ### 2. Lock down sign-ups (important)
 In the Supabase dashboard, open **Authentication → Sign In / Providers** and turn **off** “Allow new users to sign up”. Staff accounts are then created only by an administrator.
 
-### 3. Add staff
+### 3. Default administrator
+A default account with username **`admin`** exists for the first sign-in. Its temporary password was given to the project owner (it is not stored in this repository). On first login the app requires a new password before anything else.
+
+To make anyone change their password at next login, set `must_change_password` to `true` on their row in `staff`.
+
+### 4. Add staff
 For each person:
 1. **Authentication → Users → Add user → Create new user.** Enter their real email and a password, and tick **Auto Confirm User**. (The email is used for password reset links.)
 2. **Table Editor → `staff` → Insert row.** Enter the same email in **lowercase**, the **username** they will log in with, and their name (optional).
@@ -52,7 +57,7 @@ insert into public.staff (email, username, name) values
 
 To remove someone’s access, delete their row from `staff` (and their user under Authentication if you like).
 
-### 4. Set the site URL (needed for password reset emails)
+### 5. Set the site URL (needed for password reset emails)
 In **Authentication → URL Configuration**:
 - Set **Site URL** to `https://soleiyait8.github.io/Asset-Inventory-Sysm-PLUD/`
 - Under **Redirect URLs**, add `https://soleiyait8.github.io/Asset-Inventory-Sysm-PLUD/**`

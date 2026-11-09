@@ -837,7 +837,8 @@ async function onSession(session){
   me = session.user;
   const r = await sb.rpc("is_staff");
   if(r.error || !r.data){ goToLogin(); return; }
-  const prof = await sb.from("staff").select("username,name").eq("email", (me.email || "").toLowerCase()).maybeSingle();
+  const prof = await sb.from("staff").select("username,name,must_change_password").eq("email", (me.email || "").toLowerCase()).maybeSingle();
+  if(prof.data && prof.data.must_change_password){ goToLogin(); return; }
   myName = (prof.data && prof.data.username) || me.email;
   $("#who").textContent = "Signed in as " + myName + (prof.data && prof.data.name ? " (" + prof.data.name + ")" : "");
   document.documentElement.classList.remove("booting");

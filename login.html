@@ -196,8 +196,8 @@ button,input{font:inherit;color:inherit}
 
       <!-- Set new password (from reset link) -->
       <form data-view="recovery" id="recoveryForm" novalidate hidden>
-        <h1>Set a new password</h1>
-        <p class="lead">Choose a password with at least 8 characters.</p>
+        <h1 id="recTitle">Set a new password</h1>
+        <p class="lead" id="recLead">Choose a password with at least 8 characters.</p>
         <div class="notice" id="recoveryNotice" role="alert" hidden></div>
         <div class="field">
           <label for="newPassword">New password</label>
@@ -296,6 +296,13 @@ async function goIfStaff(session){
   const r = await sb.rpc("is_staff");
   if(r.error){ show("signin"); notice("#signinNotice", "Signed in, but your access couldn’t be checked: " + r.error.message); return false; }
   if(!r.data){ $("#nsEmail").textContent = session.user.email; show("notstaff"); return false; }
+  const f = await sb.from("staff").select("must_change_password").eq("email", (session.user.email || "").toLowerCase()).maybeSingle();
+  if(f.data && f.data.must_change_password){
+    $("#recTitle").textContent = "Choose your own password";
+    $("#recLead").textContent = "You signed in with a temporary password. Set a new one of at least 8 characters to continue.";
+    $("#newPassword").value = $("#confirmPassword").value = "";
+    notice("#recoveryNotice"); show("recovery"); return false;
+  }
   location.replace(APP_URL); return true;
 }
 
@@ -349,6 +356,7 @@ $("#recoveryForm").addEventListener("submit", async e => {
   const btn = $("#recoveryBtn"); busy(btn, true);
   const { data, error } = await sb.auth.updateUser({ password: p1 });
   if(error){ busy(btn, false); notice("#recoveryNotice", /same/i.test(error.message) ? "Choose a password different from your old one." : "Couldn’t save the password: " + error.message); return; }
+  await sb.rpc("password_changed");
   recovering = false; history.replaceState(null, "", location.pathname + location.search);
   const s = (await sb.auth.getSession()).data.session || { user: data.user };
   if(!(await goIfStaff(s))) busy(btn, false);

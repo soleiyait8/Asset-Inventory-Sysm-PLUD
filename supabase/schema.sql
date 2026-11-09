@@ -62,3 +62,13 @@ alter publication supabase_realtime add table public.assets, public.settings;
 
 -- Staff sign in with a username. The "username-login" Edge Function
 -- (supabase/functions/username-login) looks up the email server-side.
+
+-- First-login password change
+alter table public.staff add column must_change_password boolean not null default false;
+create or replace function public.password_changed()
+returns void language sql security definer set search_path = '' as $$
+  update public.staff set must_change_password = false
+   where email = lower(coalesce(auth.jwt() ->> 'email', ''));
+$$;
+revoke all on function public.password_changed() from public, anon;
+grant execute on function public.password_changed() to authenticated;
