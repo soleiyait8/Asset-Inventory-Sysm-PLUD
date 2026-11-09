@@ -72,3 +72,15 @@ returns void language sql security definer set search_path = '' as $$
 $$;
 revoke all on function public.password_changed() from public, anon;
 grant execute on function public.password_changed() to authenticated;
+
+-- Asset photos: private storage bucket, staff only
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('asset-photos', 'asset-photos', false, 5242880, array['image/jpeg','image/png','image/webp','image/gif']);
+create policy "staff view asset photos" on storage.objects for select to authenticated
+  using (bucket_id = 'asset-photos' and (select public.is_staff()));
+create policy "staff upload asset photos" on storage.objects for insert to authenticated
+  with check (bucket_id = 'asset-photos' and (select public.is_staff()));
+create policy "staff replace asset photos" on storage.objects for update to authenticated
+  using (bucket_id = 'asset-photos' and (select public.is_staff())) with check (bucket_id = 'asset-photos' and (select public.is_staff()));
+create policy "staff delete asset photos" on storage.objects for delete to authenticated
+  using (bucket_id = 'asset-photos' and (select public.is_staff()));

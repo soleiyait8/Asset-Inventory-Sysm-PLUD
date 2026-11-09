@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en" class="booting">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Asset Database</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#EDF0F2; --surface:#FFFFFF; --surface-2:#F5F7F8; --head:#E4E8EC; --ink:#1C2430; --muted:#5E6A77; --line:#D5DBE0;
+  --accent:#1F5FD1; --accent-ink:#FFFFFF; --accent-soft:#E3ECFB;
+  --ok:#1E7A4C; --ok-soft:#DDF1E6; --use:#1F5FD1; --use-soft:#E3ECFB;
+  --warn:#9A5B00; --warn-soft:#FBEBCF; --off:#6B7480; --off-soft:#E6E9EC; --danger:#B42318;
+  --shadow:0 1px 2px rgba(28,36,48,.06),0 8px 24px rgba(28,36,48,.08);
+  --font:"Archivo", "Helvetica Neue", Arial, system-ui, sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#161C23; --surface:#1F2731; --surface-2:#252E39; --head:#2A3440; --ink:#E7ECF1; --muted:#9AA6B3; --line:#33404D;
+    --accent:#6E9BF0; --accent-ink:#0E1620; --accent-soft:#22324C;
+    --ok:#5CC991; --ok-soft:#1C3A2B; --use:#7FA6F2; --use-soft:#22324C;
+    --warn:#E8B04F; --warn-soft:#3D3019; --off:#9AA3AD; --off-soft:#2C343E; --danger:#F07467;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#161C23; --surface:#1F2731; --surface-2:#252E39; --head:#2A3440; --ink:#E7ECF1; --muted:#9AA6B3; --line:#33404D;
+  --accent:#6E9BF0; --accent-ink:#0E1620; --accent-soft:#22324C;
+  --ok:#5CC991; --ok-soft:#1C3A2B; --use:#7FA6F2; --use-soft:#22324C;
+  --warn:#E8B04F; --warn-soft:#3D3019; --off:#9AA3AD; --off-soft:#2C343E; --danger:#F07467;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.booting .wrap{visibility:hidden}
+.wrap{max-width:1600px;margin:0 auto;padding:24px 24px 48px}
+
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.nav{display:flex;gap:4px;margin-bottom:10px}
+.nav a{padding:6px 12px;border-radius:999px;color:var(--muted);text-decoration:none;font-weight:600;font-size:14px}
+.nav a:hover{background:var(--surface);color:var(--ink)}
+.nav a[aria-current="page"]{background:var(--ink);color:var(--bg)}
+h1{margin:0;font-size:34px;line-height:1.05;font-weight:800;font-stretch:72%}
+.count{color:var(--muted);margin-top:4px}
+.who{color:var(--muted);font-size:14px;display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-bottom:10px}
+.linkish{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;font-weight:600}
+.linkish:hover{text-decoration:underline}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:600;white-space:nowrap;text-decoration:none;color:var(--ink)}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn svg{width:18px;height:18px}
+
+.filters{display:grid;grid-template-columns:minmax(220px,2fr) repeat(4,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.filters input,.filters select{height:44px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);width:100%;min-width:0}
+.filters input:focus,.filters select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+@media (max-width:900px){.filters{grid-template-columns:1fr 1fr}.filters .q{grid-column:1/-1}}
+
+.banner{display:none;margin:0 0 14px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-weight:500}
+.banner.show{display:block}
+
+.tablebox{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:auto;max-height:calc(100vh - 230px);box-shadow:var(--shadow)}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:900px}
+thead th{position:sticky;top:0;z-index:2;background:var(--head);text-align:left;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0;border-bottom:1px solid var(--line);white-space:nowrap}
+thead th button{all:unset;display:flex;align-items:center;gap:6px;padding:14px 14px;cursor:pointer;width:100%;box-sizing:border-box}
+thead th button:hover{color:var(--ink)}
+thead th button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+thead th .arrow{opacity:.35;font-size:10px}
+thead th[aria-sort] .arrow{opacity:1;color:var(--ink)}
+thead th.plain{padding:14px}
+tbody td{padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--surface-2)}
+tbody tr:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+td.muted{color:var(--muted)}
+td.idc{font-weight:800;font-stretch:72%;font-size:16px;letter-spacing:.02em}
+td.num,th.num{text-align:right}
+th.num button{justify-content:flex-end}
+td.wrapcell{white-space:normal;min-width:180px;max-width:280px}
+.cat{display:inline-flex;align-items:center;gap:7px}
+.cat .ic{font-size:16px;line-height:1}
+.thumb{width:48px;height:48px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);display:grid;place-items:center;overflow:hidden;padding:0;cursor:zoom-in}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb.none{border-style:dashed;color:var(--muted);font-size:10px;line-height:1.2;text-align:center;cursor:default}
+.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:600}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.s-available{background:var(--ok-soft);color:var(--ok)}
+.s-in-use{background:var(--use-soft);color:var(--use)}
+.s-repair{background:var(--warn-soft);color:var(--warn)}
+.s-retired{background:var(--off-soft);color:var(--off)}
+.flag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;background:var(--warn-soft);color:var(--warn)}
+tfoot td{position:sticky;bottom:0;background:var(--head);font-weight:700;padding:14px;border-top:2px solid var(--ink);white-space:nowrap}
+.empty{padding:56px 24px;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--ink);font-size:20px;font-stretch:80%;margin-bottom:6px}
+
+/* Columns popover */
+.colpop{position:relative}
+.colmenu{position:absolute;right:0;top:46px;z-index:10;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:10px;width:240px;max-height:60vh;overflow:auto}
+.colmenu[hidden]{display:none}
+.colmenu label{display:flex;gap:10px;align-items:center;padding:6px 8px;border-radius:6px;cursor:pointer}
+.colmenu label:hover{background:var(--surface-2)}
+.colmenu input{accent-color:var(--accent);width:16px;height:16px}
+.colmenu .reset{margin:6px 8px 2px}
+
+dialog.lightbox{border:0;padding:0;background:transparent;max-width:min(92vw,1000px);max-height:90vh}
+dialog.lightbox::backdrop{background:rgba(10,14,20,.8)}
+dialog.lightbox img{display:block;max-width:100%;max-height:82vh;border-radius:10px}
+dialog.lightbox .cap{color:#E7ECF1;margin-top:10px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+dialog.lightbox button{background:#E7ECF1;color:#1C2430;border:0;border-radius:8px;height:36px;padding:0 14px;font-weight:600;cursor:pointer}
+
+@media (max-width:640px){ .wrap{padding:18px 12px 40px} h1{font-size:28px} .tablebox{max-height:none} }
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <nav class="nav" aria-label="Modules"><a href="index.html">Register</a><a href="database.html" aria-current="page">Database</a></nav>
+      <h1>Asset Database</h1>
+      <div class="count" id="count">Loading…</div>
+    </div>
+    <div>
+      <div class="who"><span id="who"></span><button class="linkish" id="signOut" type="button">Sign out</button></div>
+      <div class="actions">
+        <div class="colpop">
+          <button class="btn" id="colBtn" type="button" aria-expanded="false" aria-controls="colMenu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h16M4 12h16M4 19h16M9 3v18M15 3v18"/></svg>Columns</button>
+          <div class="colmenu" id="colMenu" hidden></div>
+        </div>
+        <button class="btn" id="exportBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>Export CSV</button>
+        <a class="btn primary" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add asset</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" role="status"></div>
+
+  <div class="filters">
+    <input class="q" id="q" type="search" placeholder="Search any column…" aria-label="Search any column">
+    <select id="fProp" aria-label="Filter by property"></select>
+    <select id="fCat" aria-label="Filter by category"></select>
+    <select id="fLoc" aria-label="Filter by location"></select>
+    <select id="fStatus" aria-label="Filter by status"></select>
+  </div>
+
+  <div class="tablebox" id="tablebox"><div class="empty">Loading assets…</div></div>
+</div>
+
+<dialog class="lightbox" id="lightbox">
+  <img id="lbImg" alt="">
+  <div class="cap"><span id="lbCap"></span><span><button type="button" id="lbOpen">Open record</button> <button type="button" id="lbClose">Close</button></span></div>
+</dialog>
+
+<script>
+(function(){
+"use strict";
+const SUPABASE_URL = "https://etiqbblpenjqdkkmdbjm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_RioLcLmP4qQxil5OXO8p-A_OjD9lY5D";
+const PHOTO_BUCKET = "asset-photos";
+const COLS_KEY = "asset-db-columns-v1";
+
+const STATUS = { "available":"Available", "in-use":"In use", "repair":"In repair", "retired":"Retired" };
+const CAT_ICONS = {
+  "IT / Electronics":"💻", "Communication Equipment":"📱", "Office Equipment":"🖨️", "Audio / Visual":"📺",
+  "Appliances":"🔌", "Kitchen Equipment":"🍳", "Furniture":"🪑", "Vehicles / Transportation":"🚚",
+  "Tools / Equipment":"🔧", "Housekeeping":"🧹", "Laptop":"💻", "Desktop":"🖥️", "Monitor":"🖥️", "Phone":"📱",
+  "Tablet":"📱", "Printer":"🖨️", "Network":"🌐", "Vehicle":"🚚", "Tool":"🔧", "Other":"📦"
+};
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const DAY = 864e5;
+const hasVal = v => v !== "" && v != null && !isNaN(v);
+function parseDay(d){ if(!d) return null; const t = new Date(d + "T00:00:00"); return isNaN(t) ? null : t; }
+function fmtDay(d){ const t = parseDay(d); return t ? t.toLocaleDateString(undefined, { dateStyle:"medium" }) : ""; }
+function fmtMoney(v){ return hasVal(v) ? Number(v).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 }) : ""; }
+function bookValue(a){
+  if(!hasVal(a.value) || !Number(a.usefulLife) || !a.purchaseDate) return null;
+  const t = parseDay(a.purchaseDate); if(!t) return null;
+  const yrs = Math.max(0, (Date.now() - t) / (365.25*DAY));
+  return Math.max(0, Number(a.value) * (1 - yrs / Number(a.usefulLife)));
+}
+function idNum(id){ const m = /(\d+)$/.exec(id || ""); return m ? parseInt(m[1], 10) : 0; }
+
+/* ---------- Columns ---------- */
+const COLS = [
+  { k:"property", label:"Property", cls:"muted" },
+  { k:"id", label:"ID", cls:"idc", sort:a => idNum(a.id) },
+  { k:"photo", label:"Photo", nosort:true, render:a => thumbHtml(a) },
+  { k:"name", label:"Asset name" },
+  { k:"manufacturer", label:"Brand" },
+  { k:"model", label:"Model", hidden:true },
+  { k:"serial", label:"Serial #" },
+  { k:"category", label:"Category", render:a => a.category ? '<span class="cat"><span class="ic" aria-hidden="true">'+(CAT_ICONS[a.category] || "📦")+'</span>'+esc(a.category)+'</span>' : "" },
+  { k:"subcategory", label:"Sub-category" },
+  { k:"location", label:"Location" },
+  { k:"department", label:"Department", hidden:true },
+  { k:"assignee", label:"Assigned to" },
+  { k:"status", label:"Status", text:a => STATUS[a.status] || "", render:a => a.status ? '<span class="pill s-'+esc(a.status)+'">'+esc(STATUS[a.status] || a.status)+'</span>' : "" },
+  { k:"condition", label:"Condition" },
+  { k:"purchaseDate", label:"Purchased", text:a => fmtDay(a.purchaseDate), sort:a => a.purchaseDate || "" },
+  { k:"supplier", label:"Supplier", hidden:true },
+  { k:"invoice", label:"Invoice / PO", hidden:true },
+  { k:"value", label:"Cost", num:true, text:a => fmtMoney(a.value), sort:a => hasVal(a.value) ? Number(a.value) : -1, total:true },
+  { k:"_bv", label:"Current value", num:true, val:a => bookValue(a), text:a => { const v = bookValue(a); return v == null ? "" : fmtMoney(v); }, sort:a => { const v = bookValue(a); return v == null ? -1 : v; }, total:true },
+  { k:"warrantyEnd", label:"Warranty ends", text:a => fmtDay(a.warrantyEnd), sort:a => a.warrantyEnd || "",
+    render:a => a.warrantyEnd ? esc(fmtDay(a.warrantyEnd)) + (parseDay(a.warrantyEnd) < Date.now() - DAY ? '<span class="flag">Expired</span>' : "") : "" },
+  { k:"nextService", label:"Next service", hidden:true, text:a => fmtDay(a.nextService), sort:a => a.nextService || "" },
+  { k:"notes", label:"Notes", hidden:true, cls:"wrapcell" }
+];
+const cellText = (c, a) => c.text ? c.text(a) : (a[c.k] == null ? "" : String(a[c.k]));
+let visible = new Set(COLS.filter(c => !c.hidden).map(c => c.k));
+try{ const saved = JSON.parse(localStorage.getItem(COLS_KEY) || "null"); if(Array.isArray(saved) && saved.length) visible = new Set(saved.filter(k => COLS.some(c => c.k === k))); }catch(e){}
+function saveCols(){ try{ localStorage.setItem(COLS_KEY, JSON.stringify([...visible])); }catch(e){} }
+
+/* ---------- State ---------- */
+let sb = null, me = null, channel = null, assets = [], loaded = false;
+let sortKey = "id", sortDir = 1;
+const filter = { q:"", prop:"", cat:"", loc:"", status:"" };
+const photoUrls = new Map();
+
+function thumbHtml(a){
+  if(!a.photo) return '<span class="thumb none">No<br>photo</span>';
+  const u = photoUrls.get(a.photo);
+  return '<button type="button" class="thumb" data-photo="'+esc(a.id)+'" aria-label="View photo of '+esc(a.name)+'">'+(u ? '<img loading="lazy" alt="" src="'+esc(u)+'">' : '')+'</button>';
+}
+async function loadPhotoUrls(){
+  const paths = [...new Set(assets.map(a => a.photo).filter(p => p && !photoUrls.has(p)))];
+  if(!paths.length) return;
+  for(let i = 0; i < paths.length; i += 100){
+    const r = await sb.storage.from(PHOTO_BUCKET).createSignedUrls(paths.slice(i, i+100), 3600);
+    if(r.data) r.data.forEach(x => { if(x.signedUrl) photoUrls.set(x.path, x.signedUrl); });
+  }
+  render();
+}
+setInterval(() => { photoUrls.clear(); if(loaded) loadPhotoUrls(); }, 50*60*1000);
+
+/* ---------- Filtering & sorting ---------- */
+function opts(sel, label, values, cur){
+  sel.innerHTML = '<option value="">'+esc(label)+'</option>' + values.map(v => '<option'+(v === cur ? ' selected' : '')+'>'+esc(v)+'</option>').join("");
+}
+const uniq = k => [...new Set(assets.map(a => a[k]).filter(Boolean))].sort((x,y) => x.localeCompare(y));
+function renderFilters(){
+  ["prop","cat","loc"].forEach(f => { const k = { prop:"property", cat:"category", loc:"location" }[f]; if(filter[f] && !uniq(k).includes(filter[f])) filter[f] = ""; });
+  opts($("#fProp"), "All properties", uniq("property"), filter.prop);
+  opts($("#fCat"), "All categories", uniq("category"), filter.cat);
+  opts($("#fLoc"), "All locations", uniq("location"), filter.loc);
+  $("#fStatus").innerHTML = '<option value="">All statuses</option>' + Object.keys(STATUS).map(k => '<option value="'+k+'"'+(k === filter.status ? ' selected' : '')+'>'+STATUS[k]+'</option>').join("");
+}
+function rows(){
+  const words = filter.q.toLowerCase().split(/\s+/).filter(Boolean);
+  const list = assets.filter(a => {
+    if(filter.prop && a.property !== filter.prop) return false;
+    if(filter.cat && a.category !== filter.cat) return false;
+    if(filter.loc && a.location !== filter.loc) return false;
+    if(filter.status && a.status !== filter.status) return false;
+    if(words.length){
+      const hay = COLS.map(c => cellText(c, a)).concat([a.notes, a.supplier, a.invoice]).join(" ").toLowerCase();
+      if(!words.every(w => hay.includes(w))) return false;
+    }
+    return true;
+  });
+  const col = COLS.find(c => c.k === sortKey) || COLS[1];
+  const key = col.sort || (a => cellText(col, a).toLowerCase());
+  return list.sort((x, y) => { const a = key(x), b = key(y); return (a < b ? -1 : a > b ? 1 : idNum(x.id) - idNum(y.id)) * sortDir; });
+}
+
+/* ---------- Render ---------- */
+function render(){
+  if(!loaded) return;
+  renderFilters();
+  const list = rows(), cols = COLS.filter(c => visible.has(c.k));
+  $("#count").textContent = list.length + " of " + assets.length + (assets.length === 1 ? " asset" : " assets") + " shown";
+  if(!assets.length){ $("#tablebox").innerHTML = '<div class="empty"><strong>No assets yet</strong>Add assets in the Register and they’ll appear here.</div>'; return; }
+  let h = '<table><thead><tr>' + cols.map(c => {
+    const sorted = sortKey === c.k, arrow = sorted ? (sortDir > 0 ? "▲" : "▼") : "▲";
+    if(c.nosort) return '<th class="plain'+(c.num?' num':'')+'" scope="col">'+esc(c.label)+'</th>';
+    return '<th scope="col" class="'+(c.num?'num':'')+'"'+(sorted ? ' aria-sort="'+(sortDir > 0 ? 'ascending' : 'descending')+'"' : '')+'><button type="button" data-sort="'+c.k+'">'+esc(c.label)+'<span class="arrow" aria-hidden="true">'+arrow+'</span></button></th>';
+  }).join("") + '</tr></thead><tbody>';
+  if(!list.length) h += '<tr><td colspan="'+cols.length+'"><div class="empty"><strong>No matches</strong>Try another search or clear the filters.</div></td></tr>';
+  h += list.map(a => '<tr tabindex="0" data-id="'+esc(a.id)+'" aria-label="Open '+esc(a.id)+'">' + cols.map(c => {
+    const inner = c.render ? c.render(a) : esc(cellText(c, a));
+    return '<td class="'+[c.cls||"", c.num?"num":""].join(" ").trim()+'">'+inner+'</td>';
+  }).join("") + '</tr>').join("");
+  h += '</tbody><tfoot><tr>' + cols.map((c, i) => {
+    if(i === 0) return '<td>Total · '+list.length+(list.length === 1 ? ' asset' : ' assets')+'</td>';
+    if(c.total){ const sum = list.reduce((s, a) => { const v = c.val ? c.val(a) : Number(a[c.k]); return s + (hasVal(v) ? Number(v) : 0); }, 0); return '<td class="num">'+fmtMoney(sum)+'</td>'; }
+    return '<td></td>';
+  }).join("") + '</tr></tfoot></table>';
+  const box = $("#tablebox"), sx = box.scrollLeft, sy = box.scrollTop;
+  box.innerHTML = h; box.scrollLeft = sx; box.scrollTop = sy;
+}
+function renderColMenu(){
+  $("#colMenu").innerHTML = COLS.map(c => '<label><input type="checkbox" data-col="'+c.k+'"'+(visible.has(c.k)?' checked':'')+'>'+esc(c.label)+'</label>').join("") +
+    '<button type="button" class="linkish reset" id="colReset">Reset to default</button>';
+}
+
+/* ---------- Events ---------- */
+$("#q").addEventListener("input", e => { filter.q = e.target.value.trim(); render(); });
+[["#fProp","prop"],["#fCat","cat"],["#fLoc","loc"],["#fStatus","status"]].forEach(([s,k]) => $(s).addEventListener("change", e => { filter[k] = e.target.value; render(); }));
+$("#tablebox").addEventListener("click", e => {
+  const sb2 = e.target.closest("[data-sort]");
+  if(sb2){ const k = sb2.dataset.sort; if(sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = 1; } render(); return; }
+  const ph = e.target.closest("[data-photo]");
+  if(ph){ e.stopPropagation(); openPhoto(ph.dataset.photo); return; }
+  const tr = e.target.closest("tr[data-id]"); if(tr) location.href = "index.html#" + encodeURIComponent(tr.dataset.id);
+});
+$("#tablebox").addEventListener("keydown", e => { const tr = e.target.closest && e.target.closest("tr[data-id]"); if(tr && e.target === tr && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); location.href = "index.html#" + encodeURIComponent(tr.dataset.id); } });
+$("#colBtn").addEventListener("click", () => { const m = $("#colMenu"), open = m.hidden; if(open) renderColMenu(); m.hidden = !open; $("#colBtn").setAttribute("aria-expanded", String(open)); });
+document.addEventListener("click", e => { if(!e.target.closest(".colpop")){ $("#colMenu").hidden = true; $("#colBtn").setAttribute("aria-expanded","false"); } });
+document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("#colMenu").hidden){ $("#colMenu").hidden = true; $("#colBtn").setAttribute("aria-expanded","false"); $("#colBtn").focus(); } });
+$("#colMenu").addEventListener("change", e => { const k = e.target.dataset.col; if(!k) return; if(e.target.checked) visible.add(k); else if(visible.size > 1) visible.delete(k); else e.target.checked = true; saveCols(); render(); });
+$("#colMenu").addEventListener("click", e => { if(e.target.id === "colReset"){ visible = new Set(COLS.filter(c => !c.hidden).map(c => c.k)); saveCols(); renderColMenu(); render(); } });
+
+let lbId = "";
+async function openPhoto(id){
+  const a = assets.find(x => x.id === id); if(!a || !a.photo) return;
+  lbId = id; let u = photoUrls.get(a.photo);
+  if(!u){ const r = await sb.storage.from(PHOTO_BUCKET).createSignedUrl(a.photo, 3600); u = r.data && r.data.signedUrl; if(u) photoUrls.set(a.photo, u); }
+  if(!u) return;
+  $("#lbImg").src = u; $("#lbImg").alt = "Photo of " + (a.name || a.id); $("#lbCap").textContent = a.id + "  " + (a.name || "");
+  $("#lightbox").showModal();
+}
+$("#lbClose").addEventListener("click", () => $("#lightbox").close());
+$("#lbOpen").addEventListener("click", () => { location.href = "index.html#" + encodeURIComponent(lbId); });
+$("#lightbox").addEventListener("click", e => { if(e.target.id === "lightbox") $("#lightbox").close(); });
+
+$("#exportBtn").addEventListener("click", () => {
+  const list = rows(), cols = COLS.filter(c => visible.has(c.k) && c.k !== "photo");
+  const q = s => { s = String(s == null ? "" : s); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
+  const csv = [cols.map(c => q(c.label)).join(",")].concat(list.map(a => cols.map(c => {
+    if(c.k === "value") return q(hasVal(a.value) ? Number(a.value).toFixed(2) : "");
+    if(c.k === "_bv"){ const v = bookValue(a); return q(v == null ? "" : v.toFixed(2)); }
+    if(c.k === "purchaseDate" || c.k === "warrantyEnd" || c.k === "nextService") return q(a[c.k] || "");
+    return q(cellText(c, a));
+  }).join(","))).join("\n");
+  const blob = new Blob(["\ufeff" + csv], { type:"text/csv;charset=utf-8" }), url = URL.createObjectURL(blob), link = document.createElement("a");
+  link.href = url; link.download = "asset-database-" + new Date().toISOString().slice(0,10) + ".csv"; document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+});
+
+/* ---------- Data ---------- */
+function banner(msg){ const b = $("#banner"); b.textContent = msg || ""; b.classList.toggle("show", !!msg); }
+const rowToAsset = r => Object.assign({}, r.data, { id: r.id });
+async function loadAll(){
+  const r = await sb.from("assets").select("id,data");
+  if(r.error){ banner("The assets couldn’t be loaded: " + r.error.message); return; }
+  assets = r.data.map(rowToAsset); loaded = true; banner(""); render(); loadPhotoUrls();
+}
+function subscribe(){
+  channel = sb.channel("asset-db").on("postgres_changes", { event:"*", schema:"public", table:"assets" }, p => {
+    if(p.eventType === "DELETE"){ const id = p.old && p.old.id; assets = assets.filter(a => a.id !== id); }
+    else if(p.new && p.new.id){ const a = rowToAsset(p.new), i = assets.findIndex(x => x.id === a.id); if(i >= 0) assets[i] = a; else assets.push(a); }
+    render(); loadPhotoUrls();
+  }).subscribe();
+}
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible" && me) loadAll(); });
+
+/* ---------- Auth ---------- */
+let signingOut = false;
+const toLogin = reason => location.replace("login.html?return=database" + (reason ? "&reason=" + reason : ""));
+async function start(){
+  if(!window.supabase || typeof window.supabase.createClient !== "function"){
+    document.documentElement.classList.remove("booting"); banner("The sign-in service couldn’t load. Check your internet connection and reload the page."); return;
+  }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const { data } = await sb.auth.getSession();
+  const session = data.session;
+  if(!session){ toLogin(); return; }
+  me = session.user;
+  const ok = await sb.rpc("is_staff");
+  if(ok.error || !ok.data){ toLogin(); return; }
+  const prof = await sb.from("staff").select("username,name,must_change_password").eq("email", (me.email || "").toLowerCase()).maybeSingle();
+  if(prof.data && prof.data.must_change_password){ toLogin(); return; }
+  $("#who").textContent = "Signed in as " + ((prof.data && prof.data.username) || me.email);
+  document.documentElement.classList.remove("booting");
+  sb.auth.onAuthStateChange((event, s) => { if(!s) setTimeout(() => toLogin(signingOut ? "signedout" : ""), 0); });
+  await loadAll(); subscribe();
+}
+$("#signOut").addEventListener("click", async () => { signingOut = true; await sb.auth.signOut(); toLogin("signedout"); });
+start();
+})();
+</script>
+</body>
+</html>

@@ -18,9 +18,16 @@ It runs as static pages on GitHub Pages, backed by a Supabase database, with sta
 - **CSV export** of the full register.
 - Works on desktop and mobile, in light and dark mode.
 
+## Modules
+
+- **Register** (`index.html`): add and edit assets, print QR tags, scan tags, check items in and out, log service, and view each asset’s full record and history.
+- **Database** (`database.html`): every asset in one wide table with photo thumbnails. Search across all columns; filter by property, category, location, and status; click any column header to sort; choose which columns to show; see totals for cost and current value; export exactly what’s shown to CSV. Click a row to open that asset in the Register.
+
+Each asset can have a **property** (e.g. Virgin Beach Resort, Z Hostel), **category** and **sub-category**, **brand**, and a **photo**. Photos are resized in the browser and stored privately in Supabase Storage; only signed-in staff can see them. An asset’s QR tag prints “Property of” its property.
+
 ## How it works
 
-- **Frontend:** two pages hosted on GitHub Pages: `login.html` (sign-in and password reset) and `index.html` (the inventory). Signed-out visitors are sent to the login page; after signing in they return to where they were, including a scanned asset.
+- **Frontend:** static pages on GitHub Pages: `login.html` (sign-in and password reset), `index.html` (Register) and `database.html` (Database). Signed-out visitors are sent to the login page; after signing in they return to where they were, including a scanned asset.
 - **Database and sign-in:** Supabase (project “Plud Asset inventory Project”).
 - **Sign-in:** staff log in with a **username** and password. A small server function (`username-login`) looks up the matching email privately, so emails are never shown on the login page.
 - **Access:** only staff can see or change anything. A person needs a Supabase account **and** a row on the `staff` list. Signed-out visitors and accounts not on the list get no data at all; this is enforced by the database (row level security), not just the page.
@@ -83,6 +90,7 @@ The schema is in [`supabase/schema.sql`](supabase/schema.sql) and the login func
 | `assets` | One row per asset; the full record is in the `data` column (JSON). `updated_by` records the last editor. |
 | `staff` | Staff allowed to use the system: email, username, name. |
 | `settings` | App settings such as the organization name. |
+| Storage bucket `asset-photos` | Asset photos (private, staff only, max 5 MB each). |
 
 The key in `index.html` is Supabase’s **publishable** key, which is designed to be public. Security comes from the database rules. Never put the **secret** (service role) key in this repository.
 
