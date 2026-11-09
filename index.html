@@ -68,6 +68,16 @@ button,input,select,textarea{font:inherit;color:inherit}
 .dphoto:hover .zoomhint{background:rgba(10,14,20,.88)}
 .dphoto.empty{height:96px;cursor:pointer;display:grid;place-items:center;border-style:dashed;color:var(--muted);font-weight:600}
 .dphoto.empty:hover{color:var(--accent);border-color:var(--accent)}
+.dmedia{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:12px;margin:0 0 14px;align-items:stretch}
+.dmedia .dphoto{height:200px;margin:0}
+.dmedia .dphoto .zoomhint{right:8px;bottom:8px;padding:5px 9px;font-size:12px}
+.dmedia .nophoto{height:200px;border:1px dashed var(--line);border-radius:12px;display:grid;place-items:center;color:var(--muted);background:var(--surface-2);font-size:14px}
+.dqr{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:200px;padding:12px 10px;border:1px solid var(--line);border-radius:12px;background:#fff;color:#151A20;cursor:zoom-in;font:inherit;position:relative}
+.dqr svg{display:block;width:100%;max-width:124px;height:auto;max-height:124px}
+.dqr b{font-size:19px;line-height:1.1;font-weight:800;font-stretch:66%;letter-spacing:.01em;white-space:nowrap}
+.dqr small{font-size:11px;color:#5E6A77}
+.dqr:hover{border-color:#8A96A3}
+@media (max-width:420px){.dmedia{grid-template-columns:minmax(0,1fr) 128px}.dmedia .dphoto,.dmedia .nophoto,.dqr{height:172px}.dqr svg{max-height:100px}}
 .dphoto.loading::after{content:"Loading photo…";position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:14px}
 .dsum{margin:0 0 14px;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .scanned{display:flex;align-items:center;gap:8px;margin:-4px 0 10px;color:var(--ok);font-weight:700;font-size:14px}
@@ -94,6 +104,8 @@ dialog.lightbox::backdrop{background:#0B0F14}
 .lb-tools button:hover{background:rgba(255,255,255,.18)}
 .lb-stage{position:absolute;inset:0;overflow:auto;display:flex;padding:calc(64px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
 .lb-stage img{margin:auto;display:block;max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in;border-radius:6px}
+dialog.lightbox.qr .lb-stage img{background:#fff;padding:18px;border-radius:12px;width:min(78vh,90vw);height:auto}
+dialog.lightbox.qr .lb-stage.zoomed img{padding:24px}
 .lb-stage.zoomed img{max-width:none;max-height:none;cursor:zoom-out;border-radius:0}
 .brand .org{margin-top:4px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .linkish{background:none;border:0;padding:2px 4px;margin:-2px -4px;color:var(--accent);cursor:pointer;border-radius:4px}
@@ -703,10 +715,11 @@ function renderDrawer(){
     '</dl></section>';
   const photo = a.photo
     ? '<button type="button" class="dphoto loading" id="dPhoto" aria-label="Enlarge photo of '+esc(a.name)+'"><img alt="Photo of '+esc(a.name)+'"><span class="zoomhint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>Enlarge</span></button>'
-    : (w ? '<button type="button" class="dphoto empty" data-act="edit">+ Add a photo</button>' : '');
+    : (w ? '<button type="button" class="dphoto empty" data-act="edit">+ Add a photo</button>' : '<div class="nophoto">No photo</div>');
+  const qrCard = '<button type="button" class="dqr" id="dQr" aria-label="Enlarge QR code for '+esc(a.id)+'">'+qrSvg(a.id)+'<b>'+esc(a.id)+'</b><small>Tap to enlarge</small></button>';
   const labelActs = '<button class="btn small" data-act="print">Print label</button>' + (downloads ? '<button class="btn small" data-act="download">Download label</button>' : '');
   acts = acts.replace('<button class="btn small" data-act="print">Print label</button>', '').replace('<button class="btn small" data-act="download">Download label</button>', '');
-  $("#dBody").innerHTML = photo + summary +
+  $("#dBody").innerHTML = '<div class="dmedia">' + photo + qrCard + '</div>' + summary +
     (iss.length ? '<div class="alerts">'+iss.map(t => '<div class="alert">'+esc(t)+'</div>').join("")+'</div>' : '')+
     (acts ? '<div class="dactions">'+acts+'</div>' : '')+
     groups.map(([h, rows]) => '<h3 class="section-h">'+esc(h)+'</h3><dl class="facts">'+rows.map(r => '<dt>'+esc(r[0])+'</dt><dd>'+r[1]+'</dd>').join("")+'</dl>').join("")+
@@ -723,10 +736,19 @@ let scannedId = null, lbAsset = null;
 async function openLightbox(a){
   if(!a || !a.photo) return;
   const u = await photoUrl(a.photo); if(!u){ toast("The photo couldn’t be loaded."); return; }
+  showLightbox(a, u, "Photo of " + (a.name || a.id), false);
+}
+function openQrLightbox(a){
+  if(!a) return;
+  const svg = qrSvg(a.id).replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" ');
+  showLightbox(a, "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg), "QR code for " + a.id, true);
+}
+function showLightbox(a, u, alt, isQr){
   lbAsset = a;
+  $("#lightbox").classList.toggle("qr", !!isQr);
   const img = $("#lbImg"), stage = $("#lbStage");
   stage.classList.remove("zoomed"); img.style.width = ""; $("#lbZoom").textContent = "Zoom in";
-  img.src = u; img.alt = "Photo of " + (a.name || a.id);
+  img.src = u; img.alt = alt;
   $("#lbCap").innerHTML = '<b>'+esc(a.id)+'</b>'+esc(a.name || "");
   $("#lightbox").showModal();
 }
@@ -742,7 +764,11 @@ $("#lbImg").addEventListener("click", e => { e.stopPropagation(); lbToggleZoom(e
 $("#lbZoom").addEventListener("click", () => lbToggleZoom());
 $("#lbClose").addEventListener("click", () => $("#lightbox").close());
 $("#lbStage").addEventListener("click", e => { if(e.target.id === "lbStage") $("#lightbox").close(); });
-$("#dBody").addEventListener("click", e => { if(e.target.closest("#dPhoto") && openId) openLightbox(byId(openId)); });
+$("#dBody").addEventListener("click", e => {
+  if(!openId) return;
+  if(e.target.closest("#dPhoto")) openLightbox(byId(openId));
+  else if(e.target.closest("#dQr")) openQrLightbox(byId(openId));
+});
 
 /* ---------- List thumbnails ---------- */
 let thumbBusy = false;
