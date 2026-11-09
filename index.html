@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en" class="booting">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Asset Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#EDF0F2; --surface:#FFFFFF; --surface-2:#F5F7F8; --ink:#1C2430; --muted:#5E6A77; --line:#D5DBE0;
+  --accent:#1F5FD1; --accent-ink:#FFFFFF; --accent-soft:#E3ECFB;
+  --ok:#1E7A4C; --ok-soft:#DDF1E6; --use:#1F5FD1; --use-soft:#E3ECFB;
+  --warn:#9A5B00; --warn-soft:#FBEBCF; --off:#6B7480; --off-soft:#E6E9EC; --danger:#B42318;
+  --shadow:0 1px 2px rgba(28,36,48,.06),0 8px 24px rgba(28,36,48,.08);
+  --font:"Archivo", "Helvetica Neue", Arial, system-ui, sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#161C23; --surface:#1F2731; --surface-2:#252E39; --ink:#E7ECF1; --muted:#9AA6B3; --line:#33404D;
+    --accent:#6E9BF0; --accent-ink:#0E1620; --accent-soft:#22324C;
+    --ok:#5CC991; --ok-soft:#1C3A2B; --use:#7FA6F2; --use-soft:#22324C;
+    --warn:#E8B04F; --warn-soft:#3D3019; --off:#9AA3AD; --off-soft:#2C343E; --danger:#F07467;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#161C23; --surface:#1F2731; --surface-2:#252E39; --ink:#E7ECF1; --muted:#9AA6B3; --line:#33404D;
+  --accent:#6E9BF0; --accent-ink:#0E1620; --accent-soft:#22324C;
+  --ok:#5CC991; --ok-soft:#1C3A2B; --use:#7FA6F2; --use-soft:#22324C;
+  --warn:#E8B04F; --warn-soft:#3D3019; --off:#9AA3AD; --off-soft:#2C343E; --danger:#F07467;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 24px 64px}
+
+/* Header */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.brand h1{margin:0;font-size:34px;line-height:1.05;font-weight:800;font-stretch:72%;letter-spacing:-.01em}
+.brand .org{margin-top:4px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.linkish{background:none;border:0;padding:2px 4px;margin:-2px -4px;color:var(--accent);cursor:pointer;border-radius:4px}
+.linkish:hover{text-decoration:underline}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:600;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--danger)}
+.btn.small{height:34px;padding:0 12px;font-size:14px}
+.btn svg{width:18px;height:18px;flex:none}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+
+.banner{display:none;margin:0 0 16px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-weight:500}
+.banner.show{display:block}
+.banner.info{background:var(--surface-2);color:var(--muted)}
+
+/* Filters */
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-weight:500}
+.chip .n{font-weight:700;font-stretch:80%;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip[aria-pressed="true"] .n{color:inherit;opacity:.75}
+.search{flex:1 1 220px;display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.search input{border:0;outline:0;background:transparent;width:100%}
+.search svg{width:18px;height:18px;color:var(--muted);flex:none}
+select.field-select{height:40px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+
+.selbar{display:none;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;border-radius:8px;background:var(--accent-soft)}
+.selbar.show{display:flex}
+.selbar strong{margin-right:auto}
+
+/* Table */
+.table{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:grid;grid-template-columns:40px 118px minmax(160px,2fr) minmax(100px,1fr) minmax(110px,1.2fr) minmax(110px,1.2fr) 112px;align-items:center;gap:12px;padding:0 16px;min-height:56px;border-top:1px solid var(--line)}
+.row.head{border-top:0;min-height:44px;background:var(--surface-2);color:var(--muted);font-size:13px;font-weight:600}
+.row.item{cursor:pointer}
+.row.item:hover{background:var(--surface-2)}
+.row .id{font-weight:800;font-stretch:68%;font-size:17px;letter-spacing:.02em}
+.row .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .sub{color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .cell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .dim{color:var(--muted)}
+.check{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
+.pill{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:600}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.s-available{background:var(--ok-soft);color:var(--ok)}
+.s-in-use{background:var(--use-soft);color:var(--use)}
+.s-repair{background:var(--warn-soft);color:var(--warn)}
+.s-retired{background:var(--off-soft);color:var(--off)}
+
+.empty{padding:56px 24px;text-align:center}
+.empty h2{margin:0 0 6px;font-size:22px;font-stretch:80%}
+.empty p{margin:0 auto 18px;color:var(--muted);max-width:42ch}
+.empty .tag{margin:0 auto 26px;transform:rotate(-3deg)}
+
+@media (max-width:760px){
+  .wrap{padding:20px 14px 48px}
+  .brand h1{font-size:28px}
+  .row.head{display:none}
+  .row{grid-template-columns:28px 1fr auto;grid-template-areas:"c id st" "c nm nm" "c lc lc";gap:2px 10px;padding:12px 14px}
+  .row .c-check{grid-area:c;align-self:start;padding-top:2px}
+  .row .c-id{grid-area:id}
+  .row .c-name{grid-area:nm}
+  .row .c-cat{display:none}
+  .row .c-loc{grid-area:lc;font-size:13px;color:var(--muted)}
+  .row .c-who{display:none}
+  .row .c-status{grid-area:st}
+  .actions .btn .lbl-long{display:none}
+}
+
+/* The tag: a brushed-aluminum property label */
+.tag{position:relative;width:340px;max-width:100%;aspect-ratio:2.5/1;border-radius:10px;padding:14px 18px 14px 14px;display:flex;gap:14px;align-items:center;color:#151A20;
+  background:
+    repeating-linear-gradient(90deg,rgba(255,255,255,.18) 0 1px,rgba(0,0,0,.025) 1px 3px),
+    linear-gradient(135deg,#C9CFD5 0%,#F3F5F7 38%,#D2D7DC 55%,#ECEFF2 78%,#BFC6CD 100%);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.7),0 2px 6px rgba(0,0,0,.18)}
+.tag .rivet{position:absolute;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#9AA3AC 70%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.tag .rivet.l{left:5px}.tag .rivet.r{right:5px}
+.tag-qr{height:100%;aspect-ratio:1;background:#fff;border-radius:4px;padding:3px;margin-left:8px;flex:none}
+.tag-qr svg{display:block;width:100%;height:100%}
+.tag-text{min-width:0;display:flex;flex-direction:column;justify-content:center;height:100%}
+.tag-org{font-size:11px;font-weight:600;line-height:1.2;color:#3B4550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag-id{font-size:38px;line-height:1;font-weight:800;font-stretch:62%;letter-spacing:.01em;margin:4px 0 4px;white-space:nowrap}
+.tag-name{font-size:13px;font-weight:600;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag-foot{font-size:10px;color:#4A5561;margin-top:3px}
+
+/* Drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,14,20,.38);opacity:0;pointer-events:none;transition:opacity .2s}
+.scrim.show{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--surface);box-shadow:var(--shadow);transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;z-index:20;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.drawer.show{transform:none}
+.dhead{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+.dhead h2{margin:0;font-size:20px;font-stretch:80%}
+.iconbtn{width:38px;height:38px;border-radius:8px;border:1px solid transparent;background:none;cursor:pointer;display:grid;place-items:center}
+.iconbtn:hover{background:var(--surface-2)}
+.iconbtn svg{width:20px;height:20px}
+.dbody{overflow:auto;padding:20px 18px 28px;flex:1}
+.tagstage{background:var(--surface-2);border-radius:12px;padding:22px;display:grid;place-items:center;margin-bottom:14px}
+.dactions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+dl.facts{display:grid;grid-template-columns:120px 1fr;gap:8px 12px;margin:0 0 22px}
+dl.facts dt{color:var(--muted)}
+dl.facts dd{margin:0;word-break:break-word}
+.section-h{font-size:15px;font-weight:700;margin:0 0 10px}
+.history{list-style:none;margin:0;padding:0;border-left:2px solid var(--line)}
+.history li{position:relative;padding:0 0 12px 16px}
+.history li::before{content:"";position:absolute;left:-6px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--surface);border:2px solid var(--muted)}
+.history .when{color:var(--muted);font-size:13px}
+
+/* Dialogs */
+dialog{border:0;border-radius:14px;padding:0;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);width:min(560px,calc(100% - 24px));max-height:calc(100% - 24px)}
+dialog::backdrop{background:rgba(10,14,20,.45)}
+.dlg{padding:22px}
+.dlg h2{margin:0 0 4px;font-size:22px;font-stretch:80%}
+.dlg p.lead{margin:0 0 16px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.grid2 .full{grid-column:1/-1}
+.fs-h{grid-column:1/-1;font-size:14px;font-weight:700;color:var(--muted);margin-top:6px;padding-top:14px;border-top:1px solid var(--line)}
+.fs-h:first-child{border-top:0;padding-top:0;margin-top:0}
+.dim{color:var(--muted)}
+dl.facts dd{white-space:pre-wrap}
+.flag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;vertical-align:1px}
+.flag.bad{background:var(--warn-soft);color:var(--warn)}
+.flag.ok{background:var(--ok-soft);color:var(--ok)}
+.alerts{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.alert{padding:8px 12px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-size:14px;font-weight:500}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:14px;font-weight:600}
+label.f input,label.f select,label.f textarea{font-weight:400;height:40px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);width:100%}
+label.f textarea{height:76px;padding:8px 10px;resize:vertical}
+.dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.err{color:var(--danger);font-size:14px;min-height:1.4em;margin-top:8px}
+
+.cam{position:relative;background:#000;border-radius:10px;overflow:hidden;aspect-ratio:4/3;display:grid;place-items:center;margin-bottom:12px}
+.cam video{width:100%;height:100%;object-fit:cover;display:block}
+.cam .frame{position:absolute;inset:18%;border:3px solid rgba(255,255,255,.85);border-radius:12px;pointer-events:none}
+.cam .msg{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:#D8DEE4;font-size:14px}
+.scanrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.scanrow input[type=text]{flex:1 1 160px;height:40px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;opacity:0;transition:.2s;pointer-events:none;z-index:50;font-weight:500}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+#print-area{display:none}
+@media print{
+  body *{visibility:hidden}
+  #print-area,#print-area *{visibility:visible}
+  #print-area{display:grid;position:absolute;left:0;top:0;grid-template-columns:repeat(2,3.2in);gap:.25in;padding:.3in}
+  #print-area .tag{width:3.2in;box-shadow:inset 0 0 0 1px #999;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
+}
+.booting .wrap{visibility:hidden}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Asset Register</h1>
+      <div class="org"><span id="orgName">Your organization</span> <button class="linkish" id="editOrg" type="button">Rename</button></div>
+      <div class="org"><span id="who"></span> <button class="linkish" id="signOut" type="button">Sign out</button></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btnExport" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg><span>Export CSV</span></button>
+      <button class="btn" id="btnScan" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 12h8"/></svg><span>Scan <span class="lbl-long">tag</span></span></button>
+      <button class="btn primary" id="btnAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add asset</span></button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" role="status"></div>
+
+  <div class="filters">
+    <div class="chips" id="chips" role="group" aria-label="Filter by status"></div>
+    <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search name, ID, serial, person, location" aria-label="Search assets"></label>
+    <select class="field-select" id="catFilter" aria-label="Filter by category"></select>
+  </div>
+
+  <div class="selbar" id="selbar">
+    <strong id="selCount"></strong>
+    <button class="btn small" id="btnPrintSel" type="button">Print labels</button>
+    <button class="btn small" id="btnSheetSel" type="button" hidden>Download label sheet</button>
+    <button class="btn small" id="btnClearSel" type="button">Clear selection</button>
+  </div>
+
+  <div class="table" id="table"></div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-labelledby="dTitle">
+  <div class="dhead"><h2 id="dTitle">Asset</h2><button class="iconbtn" id="dClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="dbody" id="dBody"></div>
+</aside>
+
+<dialog id="formDlg">
+  <form class="dlg" id="assetForm" method="dialog" novalidate>
+    <h2 id="formTitle">Add asset</h2>
+    <p class="lead" id="formLead">A QR tag is created automatically.</p>
+    <div class="grid2">
+      <div class="fs-h">Identification</div>
+      <label class="f full">Name<input name="name" required placeholder="e.g. Dell Latitude 5440" autocomplete="off"></label>
+      <label class="f">Category<input name="category" list="catList" placeholder="Laptop" autocomplete="off"></label>
+      <label class="f">Condition<select name="condition"><option value="">Not recorded</option><option>New</option><option>Good</option><option>Fair</option><option>Poor</option><option>Damaged</option></select></label>
+      <label class="f">Manufacturer<input name="manufacturer" list="mfrList" placeholder="e.g. Dell" autocomplete="off"></label>
+      <label class="f">Model<input name="model" placeholder="e.g. Latitude 5440" autocomplete="off"></label>
+      <label class="f full">Serial number<input name="serial" autocomplete="off"></label>
+      <div class="fs-h">Assignment</div>
+      <label class="f">Status<select name="status"><option value="available">Available</option><option value="in-use">In use</option><option value="repair">In repair</option><option value="retired">Retired</option></select></label>
+      <label class="f">Assigned to<input name="assignee" list="whoList" autocomplete="off"></label>
+      <label class="f">Expected return<input name="dueDate" type="date"></label>
+      <label class="f">Department<input name="department" list="deptList" placeholder="e.g. Finance" autocomplete="off"></label>
+      <label class="f full">Location<input name="location" list="locList" placeholder="e.g. 3F IT room" autocomplete="off"></label>
+      <div class="fs-h">Purchase and value</div>
+      <label class="f">Purchase date<input name="purchaseDate" type="date"></label>
+      <label class="f">Supplier<input name="supplier" autocomplete="off"></label>
+      <label class="f full">Invoice or PO number<input name="invoice" autocomplete="off"></label>
+      <label class="f">Purchase cost<input name="value" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></label>
+      <label class="f">Useful life (years)<input name="usefulLife" type="number" min="0" step="0.5" inputmode="decimal" placeholder="e.g. 4"></label>
+      <div class="fs-h">Warranty and service</div>
+      <label class="f">Warranty ends<input name="warrantyEnd" type="date"></label>
+      <label class="f">Last service<input name="lastService" type="date"></label>
+      <label class="f full">Next service due<input name="nextService" type="date"></label>
+      <div class="fs-h">Notes</div>
+      <label class="f full"><span class="dim" style="font-weight:400">Accessories, specs, licenses, anything else worth knowing</span><textarea name="notes"></textarea></label>
+    </div>
+    <div class="err" id="formErr"></div>
+    <div class="dlg-actions"><button class="btn" type="button" id="formCancel">Cancel</button><button class="btn primary" type="submit" id="formSubmit">Save asset</button></div>
+  </form>
+</dialog>
+<datalist id="catList"></datalist><datalist id="locList"></datalist><datalist id="whoList"></datalist><datalist id="mfrList"></datalist><datalist id="deptList"></datalist>
+
+<dialog id="askDlg">
+  <form class="dlg" id="askForm" method="dialog">
+    <h2 id="askTitle"></h2>
+    <p class="lead" id="askMsg"></p>
+    <label class="f" id="askLabel" hidden><span id="askLabelText"></span><input id="askInput" autocomplete="off"></label>
+    <label class="f" id="askLabel2" hidden style="margin-top:12px"><span id="askLabel2Text"></span><input id="askInput2" type="date"></label>
+    <div class="dlg-actions"><button class="btn" type="button" id="askCancel">Cancel</button><button class="btn primary" type="submit" id="askOk">OK</button></div>
+  </form>
+</dialog>
+
+<dialog id="scanDlg">
+  <div class="dlg">
+    <h2>Scan an asset tag</h2>
+    <p class="lead">Point the camera at a tag’s QR code.</p>
+    <div class="cam"><video id="video" playsinline muted></video><div class="frame" id="camFrame" hidden></div><div class="msg" id="camMsg">Starting camera…</div></div>
+    <div class="scanrow">
+      <label class="btn small" style="cursor:pointer">Upload a photo<input type="file" id="scanFile" accept="image/*" hidden></label>
+      <input type="text" id="scanManual" placeholder="Or type an ID, e.g. AST-0001" aria-label="Asset ID">
+      <button class="btn small primary" id="scanGo" type="button">Find</button>
+    </div>
+    <div class="err" id="scanErr"></div>
+    <div class="dlg-actions"><button class="btn" type="button" id="scanClose">Close</button></div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+<div id="print-area" aria-hidden="true"></div>
+<canvas id="work" hidden></canvas>
+
+<script>
+(function(){
+"use strict";
+const STATUS = {
+  "available":{label:"Available"},
+  "in-use":{label:"In use"},
+  "repair":{label:"In repair"},
+  "retired":{label:"Retired"}
+};
+const BASE_CATS = ["Laptop","Desktop","Monitor","Phone","Tablet","Printer","Network","Furniture","Vehicle","Tool","Other"];
+const LS_KEY = "asset-register-v1";
+const FIELDS = ["name","category","condition","manufacturer","model","serial","status","assignee","dueDate","department","location","purchaseDate","supplier","invoice","value","usefulLife","warrantyEnd","lastService","nextService","notes"];
+
+let assets = [];
+let settings = { org: "" };
+let mode = "loading"; // loading | db | local
+let db = null, downloads = null, canWrite = true, loaded = false;
+let filter = { q:"", status:"all", category:"all" };
+const selected = new Set();
+let openId = null, editingId = null;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const byId = id => assets.find(a => a.id === id);
+
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("show"),2400); }
+function banner(msg, kind){ const b=$("#banner"); if(!msg){ b.className="banner"; b.textContent=""; return; } b.className="banner show"+(kind?" "+kind:""); b.textContent=msg; }
+function fmtDate(t){ try{ return new Date(t).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}); }catch(e){ return ""; } }
+function fmtMoney(v){ if(v===""||v==null||isNaN(v)) return "—"; try{ return Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }catch(e){ return String(v); } }
+const DAY = 864e5;
+const hasVal = v => v !== "" && v != null && !isNaN(v);
+const pl = (n, w) => n + " " + w + (n === 1 ? "" : "s");
+function parseDay(d){ if(!d) return null; const t = new Date(d + "T00:00:00"); return isNaN(t) ? null : t; }
+function fmtDay(d){ const t = parseDay(d); return t ? t.toLocaleDateString(undefined,{dateStyle:"medium"}) : ""; }
+function todayISO(){ const d = new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function daysUntil(d){ const t = parseDay(d); if(!t) return null; const n = new Date(); n.setHours(0,0,0,0); return Math.round((t - n) / DAY); }
+function ageText(d){
+  const t = parseDay(d); if(!t) return ""; const n = new Date();
+  let m = (n.getFullYear()-t.getFullYear())*12 + (n.getMonth()-t.getMonth()) - (n.getDate() < t.getDate() ? 1 : 0);
+  if(m < 1) return "under a month"; const y = Math.floor(m/12); m = m % 12;
+  return [y ? pl(y,"year") : "", m ? pl(m,"month") : ""].filter(Boolean).join(" ");
+}
+function bookValue(a){
+  if(!hasVal(a.value) || !Number(a.usefulLife) || !a.purchaseDate) return null;
+  const t = parseDay(a.purchaseDate); if(!t) return null;
+  const yrs = Math.max(0, (Date.now() - t) / (365.25*DAY));
+  return Math.max(0, Number(a.value) * (1 - yrs / Number(a.usefulLife)));
+}
+function issues(a){
+  const out = []; if(a.status === "retired") return out;
+  const due = daysUntil(a.dueDate);
+  if(a.status === "in-use" && due != null && due < 0) out.push("Return overdue by " + pl(-due,"day") + (a.assignee ? " (" + a.assignee + ")" : ""));
+  const w = daysUntil(a.warrantyEnd);
+  if(w != null && w >= 0 && w <= 30) out.push(w === 0 ? "Warranty ends today" : "Warranty ends in " + pl(w,"day"));
+  const s = daysUntil(a.nextService);
+  if(s != null && s <= 7) out.push(s < 0 ? "Service overdue by " + pl(-s,"day") : s === 0 ? "Service due today" : "Service due in " + pl(s,"day"));
+  return out;
+}
+
+/* ---------- Storage (Supabase) ---------- */
+const SUPABASE_URL = "https://etiqbblpenjqdkkmdbjm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_RioLcLmP4qQxil5OXO8p-A_OjD9lY5D";
+let sb = null, me = null, channel = null, lastUid;
+
+function upsertLocal(a){ const i = assets.findIndex(x => x.id === a.id); if(i >= 0) assets[i] = a; else assets.push(a); }
+function rowToAsset(r){ return Object.assign({}, r.data, { id: r.id }); }
+
+async function loadAll(){
+  const res = await sb.from("assets").select("id,data").order("id");
+  if(res.error){ loaded = true; banner("The inventory couldn’t be loaded: " + res.error.message); renderAll(); return; }
+  assets = res.data.map(rowToAsset);
+  const st = await sb.from("settings").select("data").eq("key","main").maybeSingle();
+  if(st.data) settings = Object.assign({org:""}, st.data.data);
+  loaded = true; banner(""); renderAll(); routeFromHash();
+}
+function subscribe(){
+  if(channel) sb.removeChannel(channel);
+  channel = sb.channel("inventory")
+    .on("postgres_changes", { event:"*", schema:"public", table:"assets" }, p => {
+      if(p.eventType === "DELETE"){ const id = p.old && p.old.id; if(id){ assets = assets.filter(a => a.id !== id); selected.delete(id); } }
+      else if(p.new && p.new.id){ upsertLocal(rowToAsset(p.new)); }
+      renderAll();
+    })
+    .on("postgres_changes", { event:"*", schema:"public", table:"settings" }, p => {
+      if(p.new && p.new.key === "main"){ settings = Object.assign({org:""}, p.new.data); renderAll(); }
+    })
+    .subscribe();
+}
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible" && me && mode === "db") loadAll(); });
+
+function writeErr(e){
+  const msg = (e && e.message) || "";
+  if(e && (e.code === "42501" || /row-level security/i.test(msg))) toast("Your account isn’t allowed to make changes.");
+  else toast("Couldn’t save. " + (msg || "Check your connection and try again."));
+}
+async function saveAsset(a, isNew){
+  a.updatedAt = Date.now();
+  if(isNew){
+    for(let attempt = 0; attempt < 5; attempt++){
+      const r = await sb.from("assets").insert({ id: a.id, data: clone(a) });
+      if(!r.error){ upsertLocal(a); renderAll(); return true; }
+      if(r.error.code === "23505"){ await loadAll(); a.id = nextId(); continue; } // someone took this ID a moment ago
+      writeErr(r.error); return false;
+    }
+    toast("Couldn’t assign an asset ID. Try again."); return false;
+  }
+  const r = await sb.from("assets").update({ data: clone(a) }).eq("id", a.id).select("id");
+  if(r.error){ writeErr(r.error); return false; }
+  if(!r.data || !r.data.length){ toast("This asset was deleted or you can’t change it."); await loadAll(); return false; }
+  upsertLocal(a); renderAll(); return true;
+}
+async function removeAsset(id){
+  const r = await sb.from("assets").delete().eq("id", id).select("id");
+  if(r.error){ writeErr(r.error); return false; }
+  assets = assets.filter(a => a.id !== id); renderAll(); return true;
+}
+async function saveSettings(){
+  const r = await sb.from("settings").upsert({ key:"main", data: clone(settings) });
+  if(r.error) writeErr(r.error);
+}
+
+function nextId(){
+  let max = 0;
+  assets.forEach(a => { const m = /-(\d+)$/.exec(a.id || ""); if(m) max = Math.max(max, parseInt(m[1],10)); });
+  return "AST-" + String(max + 1).padStart(4, "0");
+}
+
+/* ---------- QR ---------- */
+function qrMatrix(text){
+  if(typeof qrcode !== "function") return null;
+  const q = qrcode(0, "M"); q.addData(text); q.make();
+  const n = q.getModuleCount();
+  return { n, dark: (r,c) => q.isDark(r,c) };
+}
+function qrSvg(text){
+  const m = qrMatrix(text);
+  if(!m) return '<svg viewBox="0 0 10 10"><rect width="10" height="10" fill="#eee"/></svg>';
+  let d = "";
+  for(let r=0;r<m.n;r++) for(let c=0;c<m.n;c++) if(m.dark(r,c)) d += "M"+c+","+r+"h1v1h-1z";
+  return '<svg viewBox="-1 -1 '+(m.n+2)+' '+(m.n+2)+'" shape-rendering="crispEdges" role="img" aria-label="QR code for '+esc(text)+'"><rect x="-1" y="-1" width="'+(m.n+2)+'" height="'+(m.n+2)+'" fill="#fff"/><path d="'+d+'" fill="#000"/></svg>';
+}
+function orgLabel(){ return settings.org ? "Property of " + settings.org : "Property of your organization"; }
+function tagHtml(a){
+  return '<div class="tag"><span class="rivet l"></span><span class="rivet r"></span>'+
+    '<div class="tag-qr">'+qrSvg(a.id)+'</div>'+
+    '<div class="tag-text"><div class="tag-org">'+esc(orgLabel())+'</div>'+
+    '<div class="tag-id">'+esc(a.id)+'</div>'+
+    '<div class="tag-name">'+esc(a.name || "")+'</div>'+
+    '<div class="tag-foot">Scan to look up. Do not remove.</div></div></div>';
+}
+
+/* Canvas label for PNG download */
+function rr(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function fitText(ctx, text, maxW){ if(ctx.measureText(text).width <= maxW) return text; let t=text; while(t.length>1 && ctx.measureText(t+"…").width>maxW) t=t.slice(0,-1); return t+"…"; }
+function drawTag(ctx, a, x, y, W, H){
+  const g = ctx.createLinearGradient(x,y,x+W,y+H);
+  g.addColorStop(0,"#C9CFD5"); g.addColorStop(.38,"#F3F5F7"); g.addColorStop(.55,"#D2D7DC"); g.addColorStop(.78,"#ECEFF2"); g.addColorStop(1,"#BFC6CD");
+  rr(ctx,x,y,W,H,28); ctx.fillStyle=g; ctx.fill();
+  ctx.save(); rr(ctx,x,y,W,H,28); ctx.clip(); ctx.globalAlpha=.06; ctx.fillStyle="#000";
+  for(let i=x;i<x+W;i+=4) ctx.fillRect(i,y,1,H); ctx.restore();
+  ctx.lineWidth=3; ctx.strokeStyle="rgba(0,0,0,.25)"; rr(ctx,x+1.5,y+1.5,W-3,H-3,27); ctx.stroke();
+  [x+18, x+W-18].forEach(cx => { const rg=ctx.createRadialGradient(cx-4,y+H/2-4,1,cx,y+H/2,12); rg.addColorStop(0,"#fff"); rg.addColorStop(1,"#9AA3AC"); ctx.beginPath(); ctx.arc(cx,y+H/2,11,0,Math.PI*2); ctx.fillStyle=rg; ctx.fill(); });
+  const pad = 40, qs = H - pad*2, qx = x + 52, qy = y + pad;
+  rr(ctx,qx,qy,qs,qs,10); ctx.fillStyle="#fff"; ctx.fill();
+  const m = qrMatrix(a.id);
+  if(m){ const inner = qs - 20, cell = inner / m.n; ctx.fillStyle="#000";
+    for(let r=0;r<m.n;r++) for(let c=0;c<m.n;c++) if(m.dark(r,c)) ctx.fillRect(Math.floor(qx+10+c*cell), Math.floor(qy+10+r*cell), Math.ceil(cell), Math.ceil(cell)); }
+  const tx = qx + qs + 40, tw = x + W - tx - 50;
+  ctx.fillStyle="#3B4550"; ctx.textBaseline="alphabetic";
+  ctx.font = "600 30px Archivo, Arial, sans-serif"; ctx.fillText(fitText(ctx, orgLabel(), tw), tx, y+H*0.27);
+  ctx.fillStyle="#151A20";
+  try{ ctx.fontStretch = "ultra-condensed"; }catch(e){}
+  ctx.font = "800 128px Archivo, 'Arial Narrow', Arial, sans-serif"; ctx.fillText(fitText(ctx, a.id, tw), tx, y+H*0.62);
+  try{ ctx.fontStretch = "normal"; }catch(e){}
+  ctx.font = "600 36px Archivo, Arial, sans-serif"; ctx.fillText(fitText(ctx, a.name||"", tw), tx, y+H*0.78);
+  ctx.fillStyle="#4A5561"; ctx.font = "400 26px Archivo, Arial, sans-serif"; ctx.fillText("Scan to look up. Do not remove.", tx, y+H*0.9);
+}
+async function canvasBlob(c){ return new Promise(res => c.toBlob(res, "image/png")); }
+async function downloadTags(list){
+  if(!downloads || !list.length) return;
+  try{ await document.fonts.ready; }catch(e){}
+  const W=1200, H=480, gap=60, cols = list.length>1 ? 2 : 1, rows = Math.ceil(list.length/cols);
+  const c = document.createElement("canvas");
+  c.width = list.length>1 ? cols*W + (cols+1)*gap : W; c.height = list.length>1 ? rows*H + (rows+1)*gap : H;
+  const ctx = c.getContext("2d");
+  if(list.length>1){ ctx.fillStyle="#fff"; ctx.fillRect(0,0,c.width,c.height); }
+  list.forEach((a,i) => { const off = list.length>1 ? gap : 0; drawTag(ctx, a, off + (i%cols)*(W+gap), off + Math.floor(i/cols)*(H+gap), W, H); });
+  const blob = await canvasBlob(c);
+  const filename = list.length === 1 ? list[0].id + "-label.png" : "asset-labels.png";
+  try{ await downloads.save({ filename, data: blob }); toast("Label saved"); }
+  catch(e){ if(e && e.code === "declined") return; if(e && e.code === "rate_limited") toast("A save is already waiting for you."); else toast("Couldn’t save the label here."); }
+}
+function printTags(list){
+  $("#print-area").innerHTML = list.map(tagHtml).join("");
+  try{ window.print(); }catch(e){ toast("Printing isn’t available here. Download the labels instead."); }
+}
+
+/* ---------- Rendering ---------- */
+function categories(){ const s = new Set(BASE_CATS); assets.forEach(a => a.category && s.add(a.category)); return [...s].sort((a,b)=>a.localeCompare(b)); }
+function matches(a){
+  if(filter.status === "attention"){ if(!issues(a).length) return false; }
+  else if(filter.status !== "all" && a.status !== filter.status) return false;
+  if(filter.category !== "all" && (a.category||"") !== filter.category) return false;
+  if(filter.q){
+    const hay = [a.id,a.name,a.serial,a.assignee,a.location,a.category,a.supplier,a.notes,a.manufacturer,a.model,a.department,a.invoice,a.condition].join(" ").toLowerCase();
+    if(!filter.q.toLowerCase().split(/\s+/).every(w => hay.includes(w))) return false;
+  }
+  return true;
+}
+function renderChips(){
+  const counts = { all: assets.length };
+  Object.keys(STATUS).forEach(k => counts[k] = assets.filter(a => a.status === k).length);
+  counts.attention = assets.filter(a => issues(a).length).length;
+  const items = [["all","All"]].concat(Object.keys(STATUS).map(k => [k, STATUS[k].label]));
+  if(counts.attention || filter.status === "attention") items.push(["attention","Needs attention"]);
+  $("#chips").innerHTML = items.map(([k,l]) => '<button type="button" class="chip" data-status="'+k+'" aria-pressed="'+(filter.status===k)+'">'+esc(l)+' <span class="n">'+counts[k]+'</span></button>').join("");
+}
+function renderCatFilter(){
+  const sel = $("#catFilter"), cur = filter.category;
+  const used = [...new Set(assets.map(a => a.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = '<option value="all">All categories</option>' + used.map(c => '<option'+(c===cur?' selected':'')+'>'+esc(c)+'</option>').join("");
+  if(cur !== "all" && !used.includes(cur)){ filter.category = "all"; sel.value = "all"; }
+  $("#catList").innerHTML = categories().map(c => '<option value="'+esc(c)+'">').join("");
+  $("#locList").innerHTML = [...new Set(assets.map(a=>a.location).filter(Boolean))].map(c => '<option value="'+esc(c)+'">').join("");
+  $("#whoList").innerHTML = [...new Set(assets.map(a=>a.assignee).filter(Boolean))].map(c => '<option value="'+esc(c)+'">').join("");
+  $("#mfrList").innerHTML = [...new Set(assets.map(a=>a.manufacturer).filter(Boolean))].map(c => '<option value="'+esc(c)+'">').join("");
+  $("#deptList").innerHTML = [...new Set(assets.map(a=>a.department).filter(Boolean))].map(c => '<option value="'+esc(c)+'">').join("");
+}
+function renderTable(){
+  const t = $("#table");
+  if(!loaded){ t.innerHTML = '<div class="empty"><p>Loading inventory…</p></div>'; return; }
+  if(!assets.length){
+    const demo = { id:"AST-0001", name:"Your first asset" };
+    t.innerHTML = '<div class="empty">'+tagHtml(demo)+'<h2>No assets yet</h2><p>Add an asset and it gets a printable QR tag. Scan the tag later to pull up its record.</p>'+
+      (canWrite ? '<button class="btn primary" type="button" data-act="add">Add your first asset</button>' : '')+'</div>';
+    return;
+  }
+  const list = assets.filter(matches).sort((a,b) => (a.id||"").localeCompare(b.id||""));
+  const allSel = list.length && list.every(a => selected.has(a.id));
+  let html = '<div class="row head"><span><input type="checkbox" class="check" id="selAll" aria-label="Select all shown"'+(allSel?' checked':'')+'></span><span>Tag</span><span>Asset</span><span>Category</span><span>Location</span><span>Assigned to</span><span>Status</span></div>';
+  if(!list.length) html += '<div class="empty"><h2>No matches</h2><p>Try a different search or clear the filters.</p><button class="btn" type="button" data-act="clear">Clear filters</button></div>';
+  html += list.map(a => '<div class="row item" data-id="'+esc(a.id)+'" tabindex="0" role="button" aria-label="Open '+esc(a.id)+' '+esc(a.name)+'">'+
+    '<span class="c-check"><input type="checkbox" class="check" data-sel="'+esc(a.id)+'" aria-label="Select '+esc(a.id)+'"'+(selected.has(a.id)?' checked':'')+'></span>'+
+    '<span class="c-id id">'+esc(a.id)+'</span>'+
+    '<span class="c-name" style="min-width:0"><div class="name">'+esc(a.name)+(issues(a).length?'<span class="flag bad" title="'+esc(issues(a).join(". "))+'">'+pl(issues(a).length,"alert")+'</span>':'')+'</div>'+(function(){ const sub = [[a.manufacturer,a.model].filter(Boolean).join(" "), a.serial ? "S/N " + a.serial : ""].filter(Boolean).join(", "); return sub ? '<div class="sub">'+esc(sub)+'</div>' : ''; })()+'</span>'+
+    '<span class="c-cat cell dim">'+esc(a.category||"—")+'</span>'+
+    '<span class="c-loc cell">'+esc(a.location||"—")+'</span>'+
+    '<span class="c-who cell">'+esc(a.assignee||"—")+'</span>'+
+    '<span class="c-status"><span class="pill s-'+esc(a.status)+'">'+esc((STATUS[a.status]||STATUS.available).label)+'</span></span></div>').join("");
+  t.innerHTML = html;
+}
+function renderSelbar(){
+  [...selected].forEach(id => { if(!byId(id)) selected.delete(id); });
+  $("#selbar").classList.toggle("show", selected.size > 0);
+  $("#selCount").textContent = selected.size + (selected.size === 1 ? " asset selected" : " assets selected");
+  $("#btnSheetSel").hidden = !downloads;
+}
+function renderDrawer(){
+  if(!openId) return;
+  const a = byId(openId);
+  if(!a){ if(loaded) closeDrawer(); return; }
+  $("#dTitle").textContent = a.id;
+  const iss = issues(a), dueD = daysUntil(a.dueDate), wD = daysUntil(a.warrantyEnd), sD = daysUntil(a.nextService), bv = bookValue(a);
+  const flag = (t, bad) => '<span class="flag '+(bad?'bad':'ok')+'">'+esc(t)+'</span>';
+  const groups = [
+    ["Identification", [["Name", esc(a.name)], ["Category", esc(a.category)], ["Manufacturer", esc(a.manufacturer)], ["Model", esc(a.model)], ["Serial number", esc(a.serial)], ["Condition", esc(a.condition)]]],
+    ["Assignment", [["Status", esc((STATUS[a.status]||STATUS.available).label)], ["Assigned to", esc(a.assignee)],
+      ["Expected return", a.status === "in-use" && a.dueDate ? esc(fmtDay(a.dueDate)) + (dueD < 0 ? flag("Overdue",1) : dueD <= 3 ? flag("Due soon",1) : "") : ""],
+      ["Department", esc(a.department)], ["Location", esc(a.location)]]],
+    ["Purchase and value", [["Purchase date", a.purchaseDate ? esc(fmtDay(a.purchaseDate)) + ' <span class="dim">(' + esc(ageText(a.purchaseDate)) + ' ago)</span>' : ""],
+      ["Supplier", esc(a.supplier)], ["Invoice or PO", esc(a.invoice)], ["Purchase cost", hasVal(a.value) ? esc(fmtMoney(a.value)) : ""],
+      ["Useful life", Number(a.usefulLife) ? esc(pl(Number(a.usefulLife),"year")) : ""],
+      ["Current value", bv != null ? esc(fmtMoney(bv)) + ' <span class="dim">(straight-line)</span>' : ""]]],
+    ["Warranty and service", [["Warranty ends", a.warrantyEnd ? esc(fmtDay(a.warrantyEnd)) + (wD < 0 ? flag("Expired",1) : flag("Active",0)) : ""],
+      ["Last service", a.lastService ? esc(fmtDay(a.lastService)) : ""],
+      ["Next service", a.nextService ? esc(fmtDay(a.nextService)) + (sD < 0 ? flag("Overdue",1) : sD <= 7 ? flag("Due soon",1) : "") : ""]]],
+    ["Record", [["Notes", esc(a.notes)], ["Added", a.createdAt ? esc(fmtDate(a.createdAt)) : ""], ["Last updated", a.updatedAt ? esc(fmtDate(a.updatedAt)) : ""]]]
+  ].map(([h, rows]) => [h, rows.filter(r => r[1])]).filter(g => g[1].length);
+  const w = canWrite;
+  let acts = "";
+  if(w){
+    if(a.status === "in-use") acts += '<button class="btn small primary" data-act="checkin">Check in</button>';
+    else if(a.status !== "retired") acts += '<button class="btn small primary" data-act="checkout">Check out</button>';
+    if(a.status !== "repair" && a.status !== "retired") acts += '<button class="btn small" data-act="repair">Send to repair</button>';
+    if(a.status === "repair") acts += '<button class="btn small" data-act="repaired">Mark repaired</button>';
+    acts += '<button class="btn small" data-act="move">Move</button><button class="btn small" data-act="service">Log service</button><button class="btn small" data-act="edit">Edit</button>';
+  }
+  acts += '<button class="btn small" data-act="print">Print label</button>';
+  if(downloads) acts += '<button class="btn small" data-act="download">Download label</button>';
+  if(w){
+    acts += a.status === "retired" ? '<button class="btn small" data-act="restore">Restore</button>' : '<button class="btn small" data-act="retire">Retire</button>';
+    acts += '<button class="btn small danger" data-act="delete">Delete</button>';
+  }
+  const hist = (a.history||[]).slice().reverse();
+  $("#dBody").innerHTML = '<div class="tagstage">'+tagHtml(a)+'</div>'+
+    (iss.length ? '<div class="alerts">'+iss.map(t => '<div class="alert">'+esc(t)+'</div>').join("")+'</div>' : '')+
+    '<div class="dactions">'+acts+'</div>'+
+    groups.map(([h, rows]) => '<h3 class="section-h">'+esc(h)+'</h3><dl class="facts">'+rows.map(r => '<dt>'+esc(r[0])+'</dt><dd>'+r[1]+'</dd>').join("")+'</dl>').join("")+
+    '<h3 class="section-h">History</h3>'+(hist.length ? '<ul class="history">'+hist.map(h => '<li><div>'+esc(h.text)+'</div><div class="when">'+esc(fmtDate(h.t) + (h.by ? " by " + h.by : ""))+'</div></li>').join("")+'</ul>' : '<p class="dim" style="color:var(--muted);margin:0">No activity yet.</p>');
+}
+function renderAll(){
+  $("#orgName").textContent = settings.org || "Your organization";
+  $("#editOrg").hidden = !canWrite;
+  $("#btnAdd").hidden = !canWrite;
+  $("#btnExport").hidden = !downloads || !assets.length;
+  renderChips(); renderCatFilter(); renderTable(); renderSelbar(); renderDrawer();
+}
+
+/* ---------- Drawer & routing ---------- */
+function openDrawer(id){
+  openId = id; renderDrawer();
+  $("#drawer").classList.add("show"); $("#drawer").setAttribute("aria-hidden","false"); $("#scrim").classList.add("show");
+  if(location.hash.slice(1) !== id) location.hash = id;
+  setTimeout(()=>$("#dClose").focus(), 50);
+}
+function closeDrawer(){
+  const was = openId; openId = null;
+  $("#drawer").classList.remove("show"); $("#drawer").setAttribute("aria-hidden","true"); $("#scrim").classList.remove("show");
+  if(location.hash) history.replaceState(null, "", location.pathname + location.search);
+  const row = was && document.querySelector('.row.item[data-id="'+was+'"]'); if(row) row.focus();
+}
+function routeFromHash(){
+  const h = decodeURIComponent(location.hash.slice(1));
+  if(/^AST-\d+$/.test(h)){ if(byId(h) && openId !== h) openDrawer(h); }
+  else if(openId && !h){ closeDrawer(); }
+}
+window.addEventListener("hashchange", routeFromHash);
+
+/* ---------- Dialog helpers ---------- */
+function ask({title, message, input, input2, okLabel, danger}){
+  return new Promise(resolve => {
+    const d = $("#askDlg");
+    $("#askTitle").textContent = title; $("#askMsg").textContent = message || ""; $("#askMsg").hidden = !message;
+    $("#askLabel").hidden = !input; $("#askOk").textContent = okLabel || "OK";
+    $("#askLabel2").hidden = !input2; ask.second = "";
+    if(input2){ $("#askLabel2Text").textContent = input2.label; $("#askInput2").value = input2.value || ""; }
+    $("#askOk").className = "btn " + (danger ? "danger" : "primary");
+    if(input){ $("#askLabelText").textContent = input.label; $("#askInput").value = input.value || ""; $("#askInput").setAttribute("list", input.list || ""); }
+    const done = v => { d.close(); cleanup(); resolve(v); };
+    const onSubmit = e => { e.preventDefault(); ask.second = input2 ? $("#askInput2").value : ""; done(input ? $("#askInput").value.trim() : true); };
+    const onCancel = () => done(null);
+    const onClose = () => { cleanup(); resolve(null); };
+    function cleanup(){ $("#askForm").removeEventListener("submit", onSubmit); $("#askCancel").removeEventListener("click", onCancel); d.removeEventListener("cancel", onClose); }
+    $("#askForm").addEventListener("submit", onSubmit); $("#askCancel").addEventListener("click", onCancel); d.addEventListener("cancel", onClose);
+    d.showModal(); if(input) setTimeout(()=>$("#askInput").select(), 30);
+  });
+}
+
+function openForm(id){
+  editingId = id || null;
+  const f = $("#assetForm"); f.reset(); $("#formErr").textContent = "";
+  const a = id ? byId(id) : null;
+  $("#formTitle").textContent = a ? "Edit " + a.id : "Add asset";
+  $("#formLead").textContent = a ? "Changes are saved to the asset’s record." : "It will be tagged " + nextId() + ". A QR tag is created automatically.";
+  $("#formSubmit").textContent = a ? "Save changes" : "Add asset";
+  if(a){ FIELDS.forEach(k => { if(f.elements[k]) f.elements[k].value = a[k] == null ? "" : a[k]; }); }
+  $("#formDlg").showModal(); setTimeout(()=>f.elements.name.focus(), 30);
+}
+$("#formCancel").addEventListener("click", () => $("#formDlg").close());
+$("#assetForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target, v = k => (f.elements[k].value || "").trim();
+  if(!v("name")){ $("#formErr").textContent = "Give the asset a name."; f.elements.name.focus(); return; }
+  const fields = {}; FIELDS.forEach(k => { fields[k] = f.elements[k] ? v(k) : ""; });
+  ["value","usefulLife"].forEach(k => { fields[k] = fields[k] === "" ? "" : Number(fields[k]); });
+  if(fields.assignee && fields.status === "available") fields.status = "in-use";
+  if(fields.status !== "in-use"){ if(fields.status !== "available") fields.assignee = ""; fields.dueDate = ""; }
+  $("#formSubmit").disabled = true;
+  let a, ok;
+  if(editingId){
+    a = clone(byId(editingId)); const changed = [];
+    Object.keys(fields).forEach(k => { if(String(a[k]==null?"":a[k]) !== String(fields[k])) changed.push(k); });
+    Object.assign(a, fields);
+    a.history = (a.history||[]).concat(changed.length ? [{t:Date.now(), text:"Edited details", by: me ? me.email : ""}] : []).slice(-100);
+    ok = await saveAsset(a);
+  } else {
+    a = Object.assign({ id: nextId(), createdAt: Date.now(), history: [{t:Date.now(), text:"Added to inventory" + (fields.assignee ? " and assigned to " + fields.assignee : ""), by: me ? me.email : ""}] }, fields);
+    ok = await saveAsset(a, true);
+  }
+  $("#formSubmit").disabled = false;
+  if(ok){ $("#formDlg").close(); toast(editingId ? "Changes saved" : a.id + " added"); if(!editingId) openDrawer(a.id); }
+});
+
+async function act(name, id){
+  const src = byId(id); if(!src) return;
+  const a = clone(src); const log = text => { a.history = (a.history||[]).concat([{t:Date.now(), text, by: me ? me.email : ""}]).slice(-100); };
+  if(name === "edit") return openForm(id);
+  if(name === "print") return printTags([a]);
+  if(name === "download") return downloadTags([a]);
+  if(name === "checkout"){
+    const who = await ask({ title:"Check out " + a.id, message:a.name, input:{label:"Assign to", list:"whoList"}, input2:{label:"Expected return (optional)"}, okLabel:"Check out" });
+    if(!who) return; a.status = "in-use"; a.assignee = who; a.dueDate = ask.second || "";
+    log("Checked out to " + who + (a.dueDate ? ", due back " + fmtDay(a.dueDate) : ""));
+  } else if(name === "checkin"){
+    const prev = a.assignee, late = daysUntil(a.dueDate); a.status = "available"; a.assignee = ""; a.dueDate = "";
+    log("Checked in" + (prev ? " from " + prev : "") + (late != null && late < 0 ? " (" + pl(-late,"day") + " late)" : ""));
+  } else if(name === "service"){
+    const note = await ask({ title:"Log service for " + a.id, input:{label:"What was done? (optional)"}, input2:{label:"Next service due (optional)"}, okLabel:"Log service" });
+    if(note === null) return; a.lastService = todayISO(); a.nextService = ask.second || "";
+    log("Serviced" + (note ? ": " + note : "") + (a.nextService ? ". Next service " + fmtDay(a.nextService) : ""));
+  } else if(name === "repair"){
+    const note = await ask({ title:"Send " + a.id + " to repair", input:{label:"What’s wrong? (optional)"}, okLabel:"Send to repair" });
+    if(note === null) return; a.status = "repair"; a.assignee = ""; log("Sent to repair" + (note ? ": " + note : ""));
+  } else if(name === "repaired"){
+    a.status = "available"; log("Repaired and back in stock");
+  } else if(name === "move"){
+    const loc = await ask({ title:"Move " + a.id, input:{label:"New location", value:a.location, list:"locList"}, okLabel:"Move" });
+    if(!loc || loc === a.location) return; log("Moved from " + (a.location || "no location") + " to " + loc); a.location = loc;
+  } else if(name === "retire"){
+    const ok = await ask({ title:"Retire " + a.id + "?", message:"It stays in the register for your records but can’t be checked out.", okLabel:"Retire" });
+    if(!ok) return; a.status = "retired"; a.assignee = ""; log("Retired");
+  } else if(name === "restore"){
+    a.status = "available"; log("Restored to service");
+  } else if(name === "delete"){
+    const ok = await ask({ title:"Delete " + a.id + "?", message:"This removes the asset and its history permanently. Printed tags for it will stop working.", okLabel:"Delete", danger:true });
+    if(!ok) return; if(await removeAsset(id)){ selected.delete(id); closeDrawer(); toast(id + " deleted"); } return;
+  } else return;
+  if(await saveAsset(a)) toast(a.history[a.history.length-1].text);
+}
+
+/* ---------- Scanning ---------- */
+let stream = null, raf = 0;
+function stopCamera(){ cancelAnimationFrame(raf); if(stream){ stream.getTracks().forEach(t => t.stop()); stream = null; } $("#video").srcObject = null; $("#camFrame").hidden = true; }
+async function startCamera(){
+  const msg = $("#camMsg"); msg.hidden = false; msg.textContent = "Starting camera…";
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ msg.textContent = "Camera isn’t available here. Upload a photo of the tag, or type the asset ID."; return; }
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" }, audio:false });
+    if(!$("#scanDlg").open){ stopCamera(); return; }
+    const v = $("#video"); v.srcObject = stream; await v.play();
+    msg.hidden = true; $("#camFrame").hidden = false; scanLoop();
+  }catch(e){ msg.textContent = "Camera isn’t available here. Upload a photo of the tag, or type the asset ID."; }
+}
+function decode(imgSource, w, h, both){
+  if(typeof jsQR !== "function") return null;
+  const c = $("#work"), scale = Math.min(1, 900 / Math.max(w, h));
+  c.width = Math.round(w*scale); c.height = Math.round(h*scale);
+  const ctx = c.getContext("2d", { willReadFrequently:true });
+  ctx.drawImage(imgSource, 0, 0, c.width, c.height);
+  const d = ctx.getImageData(0, 0, c.width, c.height);
+  const r = jsQR(d.data, c.width, c.height, { inversionAttempts: both ? "attemptBoth" : "dontInvert" });
+  return r ? r.data : null;
+}
+function scanLoop(){
+  if(!stream) return;
+  const v = $("#video");
+  if(v.readyState >= 2 && v.videoWidth){ const text = decode(v, v.videoWidth, v.videoHeight, false); if(text && handleScan(text)) return; }
+  raf = requestAnimationFrame(scanLoop);
+}
+function handleScan(text){
+  const m = /([A-Z]{2,5}-\d{3,})/i.exec(String(text).trim());
+  const id = m ? m[1].toUpperCase() : null;
+  const a = id && byId(id);
+  if(!a){ $("#scanErr").textContent = "No asset in this inventory matches “" + String(text).slice(0,60) + "”."; return false; }
+  stopCamera(); $("#scanDlg").close(); openDrawer(a.id); toast("Found " + a.id); return true;
+}
+$("#btnScan").addEventListener("click", () => { $("#scanErr").textContent = ""; $("#scanManual").value = ""; $("#scanDlg").showModal(); startCamera(); });
+$("#scanClose").addEventListener("click", () => $("#scanDlg").close());
+$("#scanDlg").addEventListener("close", stopCamera);
+$("#scanGo").addEventListener("click", () => { const v = $("#scanManual").value.trim(); if(v) handleScan(/^\d+$/.test(v) ? "AST-" + v.padStart(4,"0") : v); });
+$("#scanManual").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); $("#scanGo").click(); } });
+$("#scanFile").addEventListener("change", async e => {
+  const file = e.target.files && e.target.files[0]; e.target.value = ""; if(!file) return;
+  $("#scanErr").textContent = "";
+  try{
+    const bmp = await createImageBitmap(file);
+    const text = decode(bmp, bmp.width, bmp.height, true);
+    if(text) handleScan(text); else $("#scanErr").textContent = "No QR code found in that photo. Try a closer, sharper shot of the tag.";
+  }catch(err){ $("#scanErr").textContent = "That file couldn’t be read as an image."; }
+});
+
+/* ---------- CSV ---------- */
+async function exportCsv(){
+  if(!downloads) return;
+  const cols = [["id","Asset ID"],["name","Name"],["category","Category"],["manufacturer","Manufacturer"],["model","Model"],["serial","Serial number"],["condition","Condition"],["status","Status"],["assignee","Assigned to"],["dueDate","Expected return"],["department","Department"],["location","Location"],["purchaseDate","Purchase date"],["supplier","Supplier"],["invoice","Invoice or PO"],["value","Purchase cost"],["usefulLife","Useful life (years)"],["_bv","Current value"],["warrantyEnd","Warranty ends"],["lastService","Last service"],["nextService","Next service"],["notes","Notes"]];
+  const q = s => { s = String(s == null ? "" : s); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
+  const rows = [cols.map(c => c[1]).join(",")].concat(assets.slice().sort((a,b)=>a.id.localeCompare(b.id)).map(a => cols.map(([k]) => q(k === "status" ? (STATUS[a.status]||{}).label : k === "_bv" ? (bookValue(a) == null ? "" : bookValue(a).toFixed(2)) : a[k])).join(",")));
+  try{ await downloads.save({ filename:"asset-register-" + new Date().toISOString().slice(0,10) + ".csv", data: rows.join("\n") }); toast("CSV saved"); }
+  catch(e){ if(e && e.code !== "declined") toast("Couldn’t save the CSV here."); }
+}
+
+/* ---------- Events ---------- */
+$("#btnAdd").addEventListener("click", () => openForm());
+$("#btnExport").addEventListener("click", exportCsv);
+$("#editOrg").addEventListener("click", async () => {
+  const name = await ask({ title:"Organization name", message:"Printed on every tag as “Property of …”.", input:{label:"Name", value:settings.org}, okLabel:"Save" });
+  if(name === null) return; settings = Object.assign({}, settings, { org:name }); renderAll(); saveSettings();
+});
+$("#chips").addEventListener("click", e => { const b = e.target.closest("[data-status]"); if(!b) return; filter.status = b.dataset.status; renderAll(); });
+$("#q").addEventListener("input", e => { filter.q = e.target.value.trim(); renderTable(); });
+$("#catFilter").addEventListener("change", e => { filter.category = e.target.value; renderTable(); });
+$("#table").addEventListener("click", e => {
+  const actBtn = e.target.closest("[data-act]");
+  if(actBtn){ if(actBtn.dataset.act === "add") openForm(); if(actBtn.dataset.act === "clear"){ filter = {q:"",status:"all",category:"all"}; $("#q").value=""; renderAll(); } return; }
+  if(e.target.id === "selAll"){ const list = assets.filter(matches); list.forEach(a => e.target.checked ? selected.add(a.id) : selected.delete(a.id)); renderTable(); renderSelbar(); return; }
+  const cb = e.target.closest("[data-sel]");
+  if(cb){ cb.checked ? selected.add(cb.dataset.sel) : selected.delete(cb.dataset.sel); renderSelbar(); e.stopPropagation(); return; }
+  if(e.target.closest(".c-check")) return;
+  const row = e.target.closest(".row.item"); if(row) openDrawer(row.dataset.id);
+});
+$("#table").addEventListener("keydown", e => { if((e.key === "Enter" || e.key === " ") && e.target.classList.contains("item")){ e.preventDefault(); openDrawer(e.target.dataset.id); } });
+$("#dBody").addEventListener("click", e => { const b = e.target.closest("[data-act]"); if(b && openId) act(b.dataset.act, openId); });
+$("#dClose").addEventListener("click", closeDrawer);
+$("#scrim").addEventListener("click", closeDrawer);
+document.addEventListener("keydown", e => { if(e.key === "Escape" && openId && !document.querySelector("dialog[open]")) closeDrawer(); });
+$("#btnPrintSel").addEventListener("click", () => printTags([...selected].map(byId).filter(Boolean)));
+$("#btnSheetSel").addEventListener("click", () => downloadTags([...selected].map(byId).filter(Boolean)));
+$("#btnClearSel").addEventListener("click", () => { selected.clear(); renderTable(); renderSelbar(); });
+
+/* ---------- Sign-in (handled by login.html) ---------- */
+function goToLogin(reason){
+  const h = decodeURIComponent(location.hash.slice(1)), q = new URLSearchParams();
+  if(/^[A-Z]{2,5}-\d+$/.test(h)) q.set("next", h);
+  if(reason) q.set("reason", reason);
+  const qs = q.toString();
+  location.replace("login.html" + (qs ? "?" + qs : ""));
+}
+
+async function onSession(session){
+  const uid = session ? session.user.id : null;
+  if(uid === lastUid) return; lastUid = uid;
+  if(!session){ if(channel){ sb.removeChannel(channel); channel = null; } goToLogin(signingOut ? "signedout" : ""); return; }
+  me = session.user; $("#who").textContent = "Signed in as " + me.email;
+  const r = await sb.rpc("is_staff");
+  if(r.error || !r.data){ goToLogin(); return; }
+  document.documentElement.classList.remove("booting");
+  mode = "db"; loaded = false; renderAll();
+  await loadAll(); subscribe();
+}
+let signingOut = false;
+$("#signOut").addEventListener("click", async () => { signingOut = true; await sb.auth.signOut(); goToLogin("signedout"); });
+
+/* ---------- Init ---------- */
+async function init(){
+  // Plain browser downloads for CSV and label files
+  downloads = { save: async ({filename, data}) => {
+    const blob = data instanceof Blob ? data : new Blob([data], { type: filename.endsWith(".csv") ? "text/csv;charset=utf-8" : "application/octet-stream" });
+    const url = URL.createObjectURL(blob), link = document.createElement("a");
+    link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    return { status:"saved" };
+  } };
+  renderAll();
+  if(!window.supabase || typeof window.supabase.createClient !== "function"){
+    document.documentElement.classList.remove("booting");
+    banner("The sign-in service couldn’t load. Check your internet connection and reload the page."); return;
+  }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  sb.auth.onAuthStateChange((event, session) => { setTimeout(() => onSession(session), 0); });
+  const { data } = await sb.auth.getSession();
+  onSession(data.session);
+}
+init();
+})();
+</script>
+</body>
+</html>
