@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Dashboard · Asset Register</title>
+<link rel="stylesheet" href="shell.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
@@ -113,16 +114,15 @@ tr:last-child td{border-bottom:0}
 </style>
 </head>
 <body>
+<script src="shell.js" data-page="dashboard"></script>
 <div class="wrap">
   <header class="top">
     <div>
-      <nav class="nav" aria-label="Modules"><a href="dashboard.html" aria-current="page">Dashboard</a><a href="index.html">Register</a><a href="database.html">Database</a></nav>
       <h1>Dashboard</h1>
       <div class="sub" id="sub">Loading…</div>
     </div>
     <div>
-      <div class="who"><span id="who"></span><button class="linkish" id="signOut" type="button">Sign out</button></div>
-      <select id="fProp" aria-label="Property"><option value="">All properties</option></select>
+            <select id="fProp" aria-label="Property"><option value="">All properties</option></select>
     </div>
   </header>
 
@@ -295,7 +295,7 @@ async function start(){
   if(ok.error || !ok.data){ toLogin(); return; }
   const prof = await sb.from("staff").select("username,must_change_password").eq("email", (me.email || "").toLowerCase()).maybeSingle();
   if(prof.data && prof.data.must_change_password){ toLogin(); return; }
-  $("#who").textContent = "Signed in as " + ((prof.data && prof.data.username) || me.email);
+  $("#who").textContent = (prof.data && prof.data.username) || me.email;
   document.documentElement.classList.remove("booting");
   sb.auth.onAuthStateChange((event, s) => { if(!s) setTimeout(() => toLogin(signingOut ? "signedout" : ""), 0); });
   await loadAll(); subscribe();

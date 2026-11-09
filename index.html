@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Asset Register</title>
+<link rel="stylesheet" href="shell.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
@@ -219,13 +220,12 @@ label.f textarea{height:76px;padding:8px 10px;resize:vertical}
 </style>
 </head>
 <body>
+<script src="shell.js" data-page="register"></script>
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <nav class="nav" aria-label="Modules"><a href="dashboard.html">Dashboard</a><a href="index.html" aria-current="page">Register</a><a href="database.html">Database</a></nav>
       <h1>Asset Register</h1>
       <div class="org"><span id="orgName">Your organization</span> <button class="linkish" id="editOrg" type="button">Rename</button></div>
-      <div class="org"><span id="who"></span> <button class="linkish" id="signOut" type="button">Sign out</button></div>
     </div>
     <div class="actions">
       <button class="btn" id="btnExport" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg><span>Export CSV</span></button>
@@ -681,6 +681,11 @@ function closeDrawer(){
 }
 function routeFromHash(){
   const h = decodeURIComponent(location.hash.slice(1));
+  if(h === "scan" || h === "add"){
+    history.replaceState(null, "", location.pathname + location.search);
+    if(h === "scan") $("#btnScan").click(); else if(canWrite) openForm();
+    return;
+  }
   const nid = normalizeId(h);
   if(nid){ if(nid !== h){ history.replaceState(null, "", "#" + nid); } if(byId(nid) && openId !== nid) openDrawer(nid); }
   else if(openId && !h){ closeDrawer(); }
@@ -950,7 +955,7 @@ async function onSession(session){
   const prof = await sb.from("staff").select("username,name,must_change_password").eq("email", (me.email || "").toLowerCase()).maybeSingle();
   if(prof.data && prof.data.must_change_password){ goToLogin(); return; }
   myName = (prof.data && prof.data.username) || me.email;
-  $("#who").textContent = "Signed in as " + myName + (prof.data && prof.data.name ? " (" + prof.data.name + ")" : "");
+  $("#who").textContent = myName; if(prof.data && prof.data.name) $("#who").title = prof.data.name;
   document.documentElement.classList.remove("booting");
   mode = "db"; loaded = false; renderAll();
   await loadAll(); subscribe();

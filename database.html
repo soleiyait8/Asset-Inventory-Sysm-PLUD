@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Asset Database</title>
+<link rel="stylesheet" href="shell.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
@@ -146,16 +147,15 @@ details{margin-top:10px;font-size:14px;color:var(--muted)} details ul{margin:6px
 </style>
 </head>
 <body>
+<script src="shell.js" data-page="database"></script>
 <div class="wrap">
   <header class="top">
     <div>
-      <nav class="nav" aria-label="Modules"><a href="dashboard.html">Dashboard</a><a href="index.html">Register</a><a href="database.html" aria-current="page">Database</a></nav>
       <h1>Asset Database</h1>
       <div class="count" id="count">Loading…</div>
     </div>
     <div>
-      <div class="who"><span id="who"></span><button class="linkish" id="signOut" type="button">Sign out</button></div>
-      <div class="actions">
+            <div class="actions">
         <div class="colpop">
           <button class="btn" id="colBtn" type="button" aria-expanded="false" aria-controls="colMenu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h16M4 12h16M4 19h16M9 3v18M15 3v18"/></svg>Columns</button>
           <div class="colmenu" id="colMenu" hidden></div>
@@ -618,7 +618,7 @@ async function start(){
   const prof = await sb.from("staff").select("username,name,must_change_password").eq("email", (me.email || "").toLowerCase()).maybeSingle();
   if(prof.data && prof.data.must_change_password){ toLogin(); return; }
   myName = (prof.data && prof.data.username) || me.email;
-  $("#who").textContent = "Signed in as " + myName;
+  $("#who").textContent = myName;
   document.documentElement.classList.remove("booting");
   sb.auth.onAuthStateChange((event, s) => { if(!s) setTimeout(() => toLogin(signingOut ? "signedout" : ""), 0); });
   await loadAll(); subscribe();
