@@ -408,6 +408,13 @@ const SUBCATS = {
 };
 const BASE_PROPS = ["Virgin Beach Resort","Z Hostel"];
 const PHOTO_BUCKET = "asset-photos";
+// Web address printed inside every QR code. Scanning with any phone camera opens the asset here.
+// If the app moves to a different address, change this and reprint the labels.
+const PUBLIC_URL = "https://soleiyait8.github.io/Asset-Inventory-Sysm-PLUD/";
+const assetLink = id => PUBLIC_URL + "?scan#" + id;
+const openedByScan = new URLSearchParams(location.search).has("scan");
+let scanPending = openedByScan;
+if(openedByScan) history.replaceState(null, "", location.pathname + location.hash);
 const LS_KEY = "asset-register-v1";
 const FIELDS = ["property","name","category","subcategory","condition","manufacturer","model","serial","status","assignee","dueDate","department","location","purchaseDate","supplier","invoice","value","usefulLife","warrantyEnd","lastService","nextService","notes"];
 
@@ -522,7 +529,9 @@ async function saveSettings(){
 
 // Accepts "Asset-001", "asset-1", or older "AST-0001" tags and returns "Asset-001"
 function normalizeId(text){
-  const m = /\b([A-Za-z]{2,5})-(\d{1,6})\b/.exec(String(text || "").trim());
+  text = String(text || "").trim();
+  const hash = text.lastIndexOf("#"); if(hash >= 0) text = text.slice(hash + 1);
+  const m = /\b([A-Za-z]{2,5})-(\d{1,6})\b/.exec(text);
   return m ? "Asset-" + String(parseInt(m[2], 10)).padStart(3, "0") : null;
 }
 function nextId(){
@@ -538,17 +547,17 @@ function qrMatrix(text){
   const n = q.getModuleCount();
   return { n, dark: (r,c) => q.isDark(r,c) };
 }
-function qrSvg(text){
+function qrSvg(text, label){
   const m = qrMatrix(text);
   if(!m) return '<svg viewBox="0 0 10 10"><rect width="10" height="10" fill="#eee"/></svg>';
   let d = "";
   for(let r=0;r<m.n;r++) for(let c=0;c<m.n;c++) if(m.dark(r,c)) d += "M"+c+","+r+"h1v1h-1z";
-  return '<svg viewBox="-1 -1 '+(m.n+2)+' '+(m.n+2)+'" shape-rendering="crispEdges" role="img" aria-label="QR code for '+esc(text)+'"><rect x="-1" y="-1" width="'+(m.n+2)+'" height="'+(m.n+2)+'" fill="#fff"/><path d="'+d+'" fill="#000"/></svg>';
+  return '<svg viewBox="-1 -1 '+(m.n+2)+' '+(m.n+2)+'" shape-rendering="crispEdges" role="img" aria-label="QR code for '+esc(label || text)+'"><rect x="-1" y="-1" width="'+(m.n+2)+'" height="'+(m.n+2)+'" fill="#fff"/><path d="'+d+'" fill="#000"/></svg>';
 }
 function orgLabel(a){ const p = a && a.property; return p ? "Property of " + p : settings.org ? "Property of " + settings.org : "Property of your organization"; }
 function tagHtml(a){
   return '<div class="tag"><span class="rivet l"></span><span class="rivet r"></span>'+
-    '<div class="tag-qr">'+qrSvg(a.id)+'</div>'+
+    '<div class="tag-qr">'+qrSvg(assetLink(a.id), a.id)+'</div>'+
     '<div class="tag-text"><div class="tag-org">'+esc(orgLabel(a))+'</div>'+
     '<div class="tag-id">'+esc(a.id)+'</div>'+
     '<div class="tag-name">'+esc(a.name || "")+'</div>'+
@@ -568,7 +577,7 @@ function drawTag(ctx, a, x, y, W, H){
   [x+18, x+W-18].forEach(cx => { const rg=ctx.createRadialGradient(cx-4,y+H/2-4,1,cx,y+H/2,12); rg.addColorStop(0,"#fff"); rg.addColorStop(1,"#9AA3AC"); ctx.beginPath(); ctx.arc(cx,y+H/2,11,0,Math.PI*2); ctx.fillStyle=rg; ctx.fill(); });
   const pad = 40, qs = H - pad*2, qx = x + 52, qy = y + pad;
   rr(ctx,qx,qy,qs,qs,10); ctx.fillStyle="#fff"; ctx.fill();
-  const m = qrMatrix(a.id);
+  const m = qrMatrix(assetLink(a.id));
   if(m){ const inner = qs - 20, cell = inner / m.n; ctx.fillStyle="#000";
     for(let r=0;r<m.n;r++) for(let c=0;c<m.n;c++) if(m.dark(r,c)) ctx.fillRect(Math.floor(qx+10+c*cell), Math.floor(qy+10+r*cell), Math.ceil(cell), Math.ceil(cell)); }
   const tx = qx + qs + 40, tw = x + W - tx - 50;
@@ -716,7 +725,7 @@ function renderDrawer(){
   const photo = a.photo
     ? '<button type="button" class="dphoto loading" id="dPhoto" aria-label="Enlarge photo of '+esc(a.name)+'"><img alt="Photo of '+esc(a.name)+'"><span class="zoomhint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>Enlarge</span></button>'
     : (w ? '<button type="button" class="dphoto empty" data-act="edit">+ Add a photo</button>' : '<div class="nophoto">No photo</div>');
-  const qrCard = '<button type="button" class="dqr" id="dQr" aria-label="Enlarge QR code for '+esc(a.id)+'">'+qrSvg(a.id)+'<b>'+esc(a.id)+'</b><small>Tap to enlarge</small></button>';
+  const qrCard = '<button type="button" class="dqr" id="dQr" aria-label="Enlarge QR code for '+esc(a.id)+'">'+qrSvg(assetLink(a.id), a.id)+'<b>'+esc(a.id)+'</b><small>Tap to enlarge</small></button>';
   const labelActs = '<button class="btn small" data-act="print">Print label</button>' + (downloads ? '<button class="btn small" data-act="download">Download label</button>' : '');
   acts = acts.replace('<button class="btn small" data-act="print">Print label</button>', '').replace('<button class="btn small" data-act="download">Download label</button>', '');
   $("#dBody").innerHTML = '<div class="dmedia">' + photo + qrCard + '</div>' + summary +
@@ -740,7 +749,7 @@ async function openLightbox(a){
 }
 function openQrLightbox(a){
   if(!a) return;
-  const svg = qrSvg(a.id).replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" ');
+  const svg = qrSvg(assetLink(a.id), a.id).replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" ');
   showLightbox(a, "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg), "QR code for " + a.id, true);
 }
 function showLightbox(a, u, alt, isQr){
@@ -821,7 +830,12 @@ function routeFromHash(){
     return;
   }
   const nid = normalizeId(h);
-  if(nid){ if(nid !== h){ history.replaceState(null, "", "#" + nid); } if(byId(nid) && openId !== nid) openDrawer(nid); }
+  if(nid){
+    if(nid !== h){ history.replaceState(null, "", "#" + nid); }
+    if(byId(nid)){ if(openId !== nid){ if(scanPending){ scannedId = nid; } openDrawer(nid); } }
+    else if(loaded){ toast(nid + " isn’t in the inventory. It may have been deleted."); }
+    scanPending = false;
+  }
   else if(openId && !h){ closeDrawer(); }
 }
 window.addEventListener("hashchange", routeFromHash);
@@ -1075,7 +1089,7 @@ $("#btnClearSel").addEventListener("click", () => { selected.clear(); renderTabl
 /* ---------- Sign-in (handled by login.html) ---------- */
 function goToLogin(reason){
   const h = decodeURIComponent(location.hash.slice(1)), q = new URLSearchParams();
-  const nid = normalizeId(h); if(nid) q.set("next", nid);
+  const nid = normalizeId(h); if(nid){ q.set("next", nid); if(openedByScan) q.set("scan", "1"); }
   if(reason) q.set("reason", reason);
   const qs = q.toString();
   location.replace("login.html" + (qs ? "?" + qs : ""));

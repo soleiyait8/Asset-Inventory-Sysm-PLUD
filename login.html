@@ -252,7 +252,7 @@ try{
 /* Where to go after sign-in: the app, optionally straight to a scanned asset */
 const next = new URLSearchParams(location.search).get("next") || "";
 const ret = new URLSearchParams(location.search).get("return");
-const APP_URL = /^Asset-\d+$/.test(next) ? "index.html#" + next : ({ database:"database.html", register:"index.html", dashboard:"dashboard.html" }[ret] || "dashboard.html");
+const APP_URL = /^Asset-\d+$/.test(next) ? "index.html" + (new URLSearchParams(location.search).has("scan") ? "?scan" : "") + "#" + next : ({ database:"database.html", register:"index.html", dashboard:"dashboard.html" }[ret] || "dashboard.html");
 const PAGE_URL = location.origin + location.pathname;
 
 function show(view){

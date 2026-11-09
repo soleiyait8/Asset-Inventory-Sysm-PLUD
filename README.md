@@ -28,6 +28,15 @@ All modules share a left side panel (`shell.js`, `shell.css`) with links to each
 
 Each asset can have a **property** (e.g. Virgin Beach Resort, Z Hostel), **category** and **sub-category**, **brand**, and a **photo**. Photos are resized in the browser and stored privately in Supabase Storage; only signed-in staff can see them. An asset’s QR tag prints “Property of” its property.
 
+## Scanning QR tags
+
+Each asset’s QR code contains a link to that asset, for example
+`https://soleiyait8.github.io/Asset-Inventory-Sysm-PLUD/?scan#Asset-001`.
+
+- **Any phone camera** can scan a tag: tapping the link opens the asset’s full record, photo and QR included. Signed-out phones go to the login page first and then straight to the scanned asset; after that the phone stays signed in.
+- **Inside the app**, *Scan tag* reads the same codes (older tags that contain only an ID like `AST-0001` still work).
+- If the app ever moves to a different web address, update `PUBLIC_URL` in `index.html` and reprint the labels.
+
 ## How it works
 
 - **Frontend:** static pages on GitHub Pages: `login.html` (sign-in and password reset), `index.html` (Register) and `database.html` (Database). Signed-out visitors are sent to the login page; after signing in they return to where they were, including a scanned asset.
