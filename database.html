@@ -120,6 +120,27 @@ dialog.lightbox img{display:block;max-width:100%;max-height:82vh;border-radius:1
 dialog.lightbox .cap{color:#E7ECF1;margin-top:10px;display:flex;justify-content:space-between;gap:12px;align-items:center}
 dialog.lightbox button{background:#E7ECF1;color:#1C2430;border:0;border-radius:8px;height:36px;padding:0 14px;font-weight:600;cursor:pointer}
 
+dialog.dlg{border:0;border-radius:14px;padding:0;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);width:min(860px,calc(100% - 24px));max-height:calc(100% - 24px)}
+dialog.dlg::backdrop{background:rgba(10,14,20,.45)}
+.dlgin{padding:22px}
+.dlgin h2{margin:0 0 4px;font-size:24px;font-stretch:80%}
+.dlgin h3{margin:18px 0 8px;font-size:15px}
+.dlgin .lead{margin:0 0 14px;color:var(--muted)}
+.drop{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:26px;border:2px dashed var(--line);border-radius:12px;background:var(--surface-2)}
+.mapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.mapgrid label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+.mapgrid label span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mapgrid select{height:34px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);padding:0 6px;font-weight:400}
+.prev{overflow:auto;border:1px solid var(--line);border-radius:8px;max-height:220px}
+.prev table{min-width:0;font-size:13px}
+.prev th{position:static;text-transform:none;letter-spacing:0;background:var(--head);padding:8px 10px;text-align:left;white-space:nowrap}
+.prev td{padding:6px 10px;border-top:1px solid var(--line);white-space:nowrap}
+.radios{display:flex;gap:18px;flex-wrap:wrap;margin-top:6px}
+.radios label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.imperr{color:var(--danger);font-size:14px;min-height:1.4em;margin-top:10px}
+details{margin-top:10px;font-size:14px;color:var(--muted)} details ul{margin:6px 0 0;padding-left:20px}
+[hidden]{display:none!important}
 @media (max-width:640px){ .wrap{padding:18px 12px 40px} h1{font-size:28px} .tablebox{max-height:none} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -128,7 +149,7 @@ dialog.lightbox button{background:#E7ECF1;color:#1C2430;border:0;border-radius:8
 <div class="wrap">
   <header class="top">
     <div>
-      <nav class="nav" aria-label="Modules"><a href="index.html">Register</a><a href="database.html" aria-current="page">Database</a></nav>
+      <nav class="nav" aria-label="Modules"><a href="dashboard.html">Dashboard</a><a href="index.html">Register</a><a href="database.html" aria-current="page">Database</a></nav>
       <h1>Asset Database</h1>
       <div class="count" id="count">Loading…</div>
     </div>
@@ -139,6 +160,7 @@ dialog.lightbox button{background:#E7ECF1;color:#1C2430;border:0;border-radius:8
           <button class="btn" id="colBtn" type="button" aria-expanded="false" aria-controls="colMenu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h16M4 12h16M4 19h16M9 3v18M15 3v18"/></svg>Columns</button>
           <div class="colmenu" id="colMenu" hidden></div>
         </div>
+        <button class="btn" id="importBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9m0 0-4 4m4-4 4 4M5 3h14"/></svg>Import</button>
         <button class="btn" id="exportBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>Export CSV</button>
         <a class="btn primary" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add asset</a>
       </div>
@@ -157,6 +179,33 @@ dialog.lightbox button{background:#E7ECF1;color:#1C2430;border:0;border-radius:8
 
   <div class="tablebox" id="tablebox"><div class="empty">Loading assets…</div></div>
 </div>
+
+<dialog class="dlg" id="importDlg" aria-labelledby="impTitle">
+  <div class="dlgin">
+    <h2 id="impTitle">Import assets</h2>
+    <div id="impStep1">
+      <p class="lead">Upload a CSV or Excel file. The first row should be the column headings, like Property, Asset name, Brand, Serial #, Category. You’ll see a preview before anything is saved.</p>
+      <div class="drop">
+        <label class="btn primary" style="cursor:pointer">Choose file<input type="file" id="impFile" accept=".csv,.xlsx,.xls,text/csv" hidden></label>
+        <button type="button" class="linkish" id="impTemplate">Download a template</button>
+      </div>
+    </div>
+    <div id="impStep2" hidden>
+      <p class="lead" id="impSummary"></p>
+      <h3>Match your columns</h3>
+      <div class="mapgrid" id="impMap"></div>
+      <div id="impDupBox" hidden>
+        <h3>If an ID already exists</h3>
+        <div class="radios"><label><input type="radio" name="impDup" value="skip" checked> Skip that row</label><label><input type="radio" name="impDup" value="update"> Update the existing asset</label></div>
+      </div>
+      <h3>Preview</h3>
+      <div class="prev" id="impPreview"></div>
+      <div id="impNotes"></div>
+    </div>
+    <div class="imperr" id="impErr" role="status"></div>
+    <div class="dlg-actions"><button class="btn" type="button" id="impCancel">Cancel</button><button class="btn primary" type="button" id="impGo" hidden>Import</button></div>
+  </div>
+</dialog>
 
 <dialog class="lightbox" id="lightbox">
   <img id="lbImg" alt="">
@@ -225,7 +274,7 @@ try{ const saved = JSON.parse(localStorage.getItem(COLS_KEY) || "null"); if(Arra
 function saveCols(){ try{ localStorage.setItem(COLS_KEY, JSON.stringify([...visible])); }catch(e){} }
 
 /* ---------- State ---------- */
-let sb = null, me = null, channel = null, assets = [], loaded = false;
+let sb = null, me = null, channel = null, assets = [], loaded = false, myName = "";
 let sortKey = "id", sortDir = 1;
 const filter = { q:"", prop:"", cat:"", loc:"", status:"" };
 const photoUrls = new Map();
@@ -350,6 +399,191 @@ $("#exportBtn").addEventListener("click", () => {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 });
 
+/* ---------- Import (CSV / Excel) ---------- */
+const IMPORT_FIELDS = [
+  ["","Don’t import"],["id","ID"],["property","Property"],["name","Asset name"],["manufacturer","Brand"],["model","Model"],["serial","Serial #"],
+  ["category","Category"],["subcategory","Sub-category"],["location","Location"],["department","Department"],["assignee","Assigned to"],
+  ["status","Status"],["condition","Condition"],["purchaseDate","Purchase date"],["supplier","Supplier"],["invoice","Invoice / PO"],
+  ["value","Cost"],["usefulLife","Useful life (years)"],["warrantyEnd","Warranty ends"],["lastService","Last service"],["nextService","Next service"],["notes","Notes"]
+];
+const SYN = {
+  id:["id","asset id","asset no","asset number","asset tag","tag","tag no"], property:["property","site","branch","hotel","resort"],
+  name:["asset name","name","item","item name","description","asset"], manufacturer:["brand","manufacturer","make"], model:["model","model no"],
+  serial:["serial","serial no","serial number","s n","sn"], category:["category","type","asset type"], subcategory:["sub category","subcategory"],
+  location:["location","room","area"], department:["department","dept"], assignee:["assigned to","assignee","custodian","user","issued to"],
+  status:["status"], condition:["condition"], purchaseDate:["purchase date","date purchased","date acquired","acquired","purchased","acquisition date"],
+  supplier:["supplier","vendor"], invoice:["invoice","po","invoice po","invoice no","po no","po number","invoice or po"],
+  value:["cost","value","price","purchase cost","amount","unit cost","acquisition cost"], usefulLife:["useful life","useful life years","life years"],
+  warrantyEnd:["warranty","warranty ends","warranty end","warranty expiry","warranty until"], lastService:["last service","last maintenance"],
+  nextService:["next service","next service due","next maintenance"], notes:["notes","remarks","comment","comments"]
+};
+const normH = h => String(h || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+function autoMap(headers){
+  const used = new Set(), map = headers.map(() => "");
+  const keys = Object.keys(SYN);
+  headers.forEach((h, i) => { const n = normH(h); const k = keys.find(k => !used.has(k) && SYN[k].includes(n)); if(k){ map[i] = k; used.add(k); } });
+  headers.forEach((h, i) => { if(map[i]) return; const n = normH(h); const k = keys.find(k => !used.has(k) && SYN[k].some(s => s.length > 3 && n.includes(s))); if(k){ map[i] = k; used.add(k); } });
+  return map;
+}
+function parseCSV(text){
+  text = text.replace(/^\uFEFF/, "");
+  const first = text.split(/\r?\n/)[0] || "";
+  const d = [",",";","\t"].sort((a,b) => first.split(b).length - first.split(a).length)[0];
+  const rows = []; let row = [], cell = "", q = false;
+  for(let i = 0; i < text.length; i++){
+    const c = text[i];
+    if(q){ if(c === '"'){ if(text[i+1] === '"'){ cell += '"'; i++; } else q = false; } else cell += c; }
+    else if(c === '"') q = true;
+    else if(c === d){ row.push(cell); cell = ""; }
+    else if(c === "\n" || c === "\r"){ if(c === "\r" && text[i+1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += c;
+  }
+  if(cell !== "" || row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(c => String(c).trim() !== ""));
+}
+let xlsxLoading = null;
+function loadXlsx(){
+  if(window.XLSX) return Promise.resolve();
+  if(!xlsxLoading) xlsxLoading = new Promise((res, rej) => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; s.onload = res; s.onerror = () => rej(new Error("The Excel reader couldn’t load.")); document.head.appendChild(s); });
+  return xlsxLoading;
+}
+async function readRows(file){
+  if(/\.(xlsx|xls)$/i.test(file.name)){
+    await loadXlsx();
+    const wb = XLSX.read(await file.arrayBuffer(), { type:"array", cellDates:true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    return XLSX.utils.sheet_to_json(ws, { header:1, raw:false, dateNF:"yyyy-mm-dd", defval:"" }).filter(r => r.some(c => String(c).trim() !== ""));
+  }
+  return parseCSV(await file.text());
+}
+function toISODate(v){
+  v = String(v || "").trim(); if(!v) return "";
+  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(v);
+  if(m) return m[1] + "-" + m[2].padStart(2,"0") + "-" + m[3].padStart(2,"0");
+  m = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/.exec(v);
+  if(m){ let y = +m[3]; if(y < 100) y += 2000; let mo = +m[1], d = +m[2]; if(mo > 12 && d <= 12){ const t = mo; mo = d; d = t; } if(mo >= 1 && mo <= 12 && d >= 1 && d <= 31) return y + "-" + String(mo).padStart(2,"0") + "-" + String(d).padStart(2,"0"); return null; }
+  const t = new Date(v); if(!isNaN(t)) return t.getFullYear() + "-" + String(t.getMonth()+1).padStart(2,"0") + "-" + String(t.getDate()).padStart(2,"0");
+  return null;
+}
+function toStatus(v){
+  v = String(v || "").toLowerCase();
+  if(!v) return "available";
+  if(/retir|dispos|lost|stolen|written|scrap/.test(v)) return "retired";
+  if(/repair|maint|broken|defect|service/.test(v)) return "repair";
+  if(/use|assign|deploy|issued|checked out/.test(v)) return "in-use";
+  return "available";
+}
+function toCondition(v){ v = String(v || "").trim(); const k = ["New","Good","Fair","Poor","Damaged"].find(c => c.toLowerCase() === v.toLowerCase()); return k || v; }
+function toNumber(v){ v = String(v || "").replace(/[^0-9.\-]/g, ""); if(v === "" || v === "-" || v === ".") return ""; const n = Number(v); return isNaN(n) ? null : n; }
+function normalizeId(text){ const m = /\b([A-Za-z]{2,5})-(\d{1,6})\b/.exec(String(text || "").trim()); return m ? "Asset-" + String(parseInt(m[2], 10)).padStart(3, "0") : null; }
+
+let imp = null; // { file, headers, rows, map }
+function impReset(){
+  imp = null; $("#impStep1").hidden = false; $("#impStep2").hidden = true; $("#impGo").hidden = true; $("#impErr").textContent = "";
+  $("#impGo").disabled = false; $("#impGo").textContent = "Import"; $("#impCancel").textContent = "Cancel";
+}
+$("#importBtn").addEventListener("click", () => { impReset(); $("#importDlg").showModal(); });
+$("#impCancel").addEventListener("click", () => $("#importDlg").close());
+$("#impTemplate").addEventListener("click", () => {
+  const head = ["Property","ID","Asset name","Brand","Model","Serial #","Category","Sub-category","Location","Department","Assigned to","Status","Condition","Purchase date","Supplier","Invoice / PO","Cost","Useful life (years)","Warranty ends","Notes"];
+  const ex = ["Virgin Beach Resort","","Laptop 13\"","Apple","MacBook Air","123456789","IT / Electronics","Laptop","Admin Office","Admin","Maria Santos","In use","Good","2024-03-10","iStore","PO-1042","65000","4","2025-03-10",""];
+  const q = s => /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  const blob = new Blob(["\ufeff" + head.map(q).join(",") + "\n" + ex.map(q).join(",") + "\n"], { type:"text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob), a = document.createElement("a"); a.href = url; a.download = "asset-import-template.csv"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+});
+$("#impFile").addEventListener("change", async e => {
+  const file = e.target.files && e.target.files[0]; e.target.value = ""; if(!file) return;
+  $("#impErr").textContent = "";
+  try{
+    const all = await readRows(file);
+    if(all.length < 2){ $("#impErr").textContent = "The file needs a heading row and at least one asset row."; return; }
+    const width = Math.max(...all.map(r => r.length));
+    const headers = Array.from({ length:width }, (_, i) => String(all[0][i] || "").trim() || "Column " + (i + 1));
+    imp = { file, headers, rows: all.slice(1).map(r => headers.map((_, i) => String(r[i] == null ? "" : r[i]).trim())), map: autoMap(headers) };
+    renderImport();
+  }catch(err){ $("#impErr").textContent = "That file couldn’t be read. " + (err.message || "Save it as CSV and try again."); }
+});
+$("#impMap").addEventListener("change", e => { const i = e.target.dataset.i; if(i == null) return; const v = e.target.value; if(v) imp.map = imp.map.map((m, j) => (m === v && j !== +i) ? "" : m); imp.map[+i] = v; renderImport(); });
+
+function buildImport(){
+  const existing = new Set(assets.map(a => a.id)), mode = (document.querySelector('input[name="impDup"]:checked') || {}).value || "skip";
+  let max = Math.max(0, ...assets.map(a => idNum(a.id)));
+  const get = (r, k) => { const i = imp.map.indexOf(k); return i < 0 ? "" : r[i]; };
+  imp.rows.forEach(r => { const id = imp.map.includes("id") ? normalizeId(get(r, "id")) : null; if(id) max = Math.max(max, idNum(id)); });
+  const fresh = [], updates = [], skipped = [], warn = [], seen = new Set();
+  imp.rows.forEach((r, n) => {
+    const line = n + 2, name = get(r, "name");
+    if(!name){ skipped.push("Row " + line + ": no asset name"); return; }
+    const data = {};
+    IMPORT_FIELDS.forEach(([k]) => { if(!k || k === "id" || !imp.map.includes(k)) return; const raw = get(r, k);
+      if(k === "status") data.status = toStatus(raw);
+      else if(k === "condition") data.condition = toCondition(raw);
+      else if(["purchaseDate","warrantyEnd","lastService","nextService"].includes(k)){ const d = toISODate(raw); if(d === null){ warn.push("Row " + line + ": couldn’t read date “" + raw + "”"); data[k] = ""; } else data[k] = d; }
+      else if(k === "value" || k === "usefulLife"){ const v = toNumber(raw); if(v === null){ warn.push("Row " + line + ": couldn’t read number “" + raw + "”"); data[k] = ""; } else data[k] = v; }
+      else data[k] = raw;
+    });
+    let id = imp.map.includes("id") ? normalizeId(get(r, "id")) : null;
+    if(id && seen.has(id)){ warn.push("Row " + line + ": duplicate ID " + id + " in file, given a new ID"); id = null; }
+    if(id && existing.has(id)){
+      if(mode === "skip"){ skipped.push("Row " + line + ": " + id + " already exists"); seen.add(id); return; }
+      const cur = assets.find(a => a.id === id), merged = Object.assign({}, cur);
+      Object.keys(data).forEach(k => { if(data[k] !== "" && data[k] != null) merged[k] = data[k]; });
+      merged.updatedAt = Date.now(); merged.history = (cur.history || []).concat([{ t:Date.now(), text:"Updated from import (" + imp.file.name + ")", by:myName }]).slice(-100);
+      delete merged.id; updates.push({ id, data: merged }); seen.add(id); return;
+    }
+    if(!id){ max += 1; id = "Asset-" + String(max).padStart(3, "0"); }
+    seen.add(id);
+    if(!data.status) data.status = "available";
+    if(data.status !== "in-use"){ if(data.status !== "available") data.assignee = ""; }
+    const rec = Object.assign({ createdAt:Date.now(), updatedAt:Date.now(), history:[{ t:Date.now(), text:"Imported from " + imp.file.name, by:myName }] }, data);
+    fresh.push({ id, data: rec });
+  });
+  return { fresh, updates, skipped, warn };
+}
+function renderImport(){
+  $("#impStep1").hidden = true; $("#impStep2").hidden = false; $("#impGo").hidden = false;
+  $("#impMap").innerHTML = imp.headers.map((h, i) => '<label><span title="'+esc(h)+'">'+esc(h)+'</span><select data-i="'+i+'">'+IMPORT_FIELDS.map(([k, l]) => '<option value="'+k+'"'+(imp.map[i] === k ? ' selected' : '')+'>'+esc(l)+'</option>').join("")+'</select></label>').join("");
+  const hasId = imp.map.includes("id");
+  $("#impDupBox").hidden = !hasId;
+  const plan = buildImport();
+  const mapped = IMPORT_FIELDS.filter(([k]) => k && imp.map.includes(k) && k !== "id");
+  const sample = plan.fresh.concat(plan.updates).slice(0, 5);
+  $("#impPreview").innerHTML = '<table><thead><tr><th>ID</th>'+mapped.map(([, l]) => '<th>'+esc(l)+'</th>').join("")+'</tr></thead><tbody>'+
+    sample.map(r => '<tr><td><b>'+esc(r.id)+'</b></td>'+mapped.map(([k]) => '<td>'+esc(k === "status" ? (STATUS[r.data.status] || "") : r.data[k] == null ? "" : r.data[k])+'</td>').join("")+'</tr>').join("")+'</tbody></table>';
+  const nameMapped = imp.map.includes("name");
+  $("#impSummary").innerHTML = '<b>'+esc(imp.file.name)+'</b>: '+imp.rows.length+' rows. '+
+    (nameMapped ? 'Will add <b>'+plan.fresh.length+'</b> new'+(plan.updates.length ? ', update <b>'+plan.updates.length+'</b>' : '')+(plan.skipped.length ? ', skip <b>'+plan.skipped.length+'</b>' : '')+'.' : '<span style="color:var(--danger)">Choose which column holds the asset name.</span>');
+  const notes = plan.skipped.concat(plan.warn);
+  $("#impNotes").innerHTML = notes.length ? '<details><summary>'+notes.length+' note'+(notes.length === 1 ? '' : 's')+' about this file</summary><ul>'+notes.slice(0, 50).map(n => '<li>'+esc(n)+'</li>').join("")+(notes.length > 50 ? '<li>…and '+(notes.length - 50)+' more</li>' : '')+'</ul></details>' : '';
+  $("#impGo").disabled = !nameMapped || !(plan.fresh.length + plan.updates.length);
+  $("#impGo").textContent = "Import " + (plan.fresh.length + plan.updates.length) + " assets";
+}
+document.addEventListener("change", e => { if(e.target.name === "impDup" && imp) renderImport(); });
+$("#impGo").addEventListener("click", async () => {
+  const plan = buildImport(), btn = $("#impGo");
+  btn.disabled = true; btn.textContent = "Importing…"; $("#impErr").textContent = "";
+  let added = 0, updated = 0;
+  try{
+    for(let i = 0; i < plan.fresh.length; i += 200){
+      const r = await sb.from("assets").insert(plan.fresh.slice(i, i + 200));
+      if(r.error) throw r.error; added += Math.min(200, plan.fresh.length - i);
+    }
+    for(let i = 0; i < plan.updates.length; i += 200){
+      const r = await sb.from("assets").upsert(plan.updates.slice(i, i + 200), { onConflict:"id" });
+      if(r.error) throw r.error; updated += Math.min(200, plan.updates.length - i);
+    }
+    await loadAll();
+    $("#impStep2").hidden = true; btn.hidden = true; $("#impCancel").textContent = "Done";
+    $("#impStep1").hidden = true;
+    $("#impErr").innerHTML = '<span style="color:var(--ok)">Imported: '+added+' new'+(updated ? ', '+updated+' updated' : '')+(plan.skipped.length ? ', '+plan.skipped.length+' skipped' : '')+'.</span>';
+  }catch(err){
+    btn.disabled = false; btn.textContent = "Try again";
+    const msg = (err && err.code === "23505") ? "Some IDs were taken while importing. Reload the page and import again with “Skip” selected." : (err && err.message) || "Check your connection.";
+    $("#impErr").textContent = "Import stopped after " + (added + updated) + " assets. " + msg;
+    loadAll();
+  }
+});
+
 /* ---------- Data ---------- */
 function banner(msg){ const b = $("#banner"); b.textContent = msg || ""; b.classList.toggle("show", !!msg); }
 const rowToAsset = r => Object.assign({}, r.data, { id: r.id });
@@ -383,7 +617,8 @@ async function start(){
   if(ok.error || !ok.data){ toLogin(); return; }
   const prof = await sb.from("staff").select("username,name,must_change_password").eq("email", (me.email || "").toLowerCase()).maybeSingle();
   if(prof.data && prof.data.must_change_password){ toLogin(); return; }
-  $("#who").textContent = "Signed in as " + ((prof.data && prof.data.username) || me.email);
+  myName = (prof.data && prof.data.username) || me.email;
+  $("#who").textContent = "Signed in as " + myName;
   document.documentElement.classList.remove("booting");
   sb.auth.onAuthStateChange((event, s) => { if(!s) setTimeout(() => toLogin(signingOut ? "signedout" : ""), 0); });
   await loadAll(); subscribe();

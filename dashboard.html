@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en" class="booting">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboard · Asset Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#EDF0F2; --surface:#FFFFFF; --surface-2:#F5F7F8; --ink:#1C2430; --muted:#5E6A77; --line:#D5DBE0; --track:#E6EAEE;
+  --accent:#1F5FD1; --accent-ink:#FFFFFF; --accent-soft:#E3ECFB;
+  --ok:#1E7A4C; --ok-soft:#DDF1E6; --use:#1F5FD1; --use-soft:#E3ECFB;
+  --warn:#9A5B00; --warn-soft:#FBEBCF; --off:#8A939D; --off-soft:#E6E9EC; --danger:#B42318;
+  --shadow:0 1px 2px rgba(28,36,48,.05),0 6px 18px rgba(28,36,48,.06);
+  --font:"Archivo", "Helvetica Neue", Arial, system-ui, sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#161C23; --surface:#1F2731; --surface-2:#252E39; --ink:#E7ECF1; --muted:#9AA6B3; --line:#33404D; --track:#2C3640;
+    --accent:#6E9BF0; --accent-ink:#0E1620; --accent-soft:#22324C;
+    --ok:#5CC991; --ok-soft:#1C3A2B; --use:#7FA6F2; --use-soft:#22324C;
+    --warn:#E8B04F; --warn-soft:#3D3019; --off:#8D97A2; --off-soft:#2C343E; --danger:#F07467;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#161C23; --surface:#1F2731; --surface-2:#252E39; --ink:#E7ECF1; --muted:#9AA6B3; --line:#33404D; --track:#2C3640;
+  --accent:#6E9BF0; --accent-ink:#0E1620; --accent-soft:#22324C;
+  --ok:#5CC991; --ok-soft:#1C3A2B; --use:#7FA6F2; --use-soft:#22324C;
+  --warn:#E8B04F; --warn-soft:#3D3019; --off:#8D97A2; --off-soft:#2C343E; --danger:#F07467;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.booting .wrap{visibility:hidden}
+.wrap{max-width:1280px;margin:0 auto;padding:24px 24px 56px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.nav{display:flex;gap:4px;margin-bottom:10px}
+.nav a{padding:6px 12px;border-radius:999px;color:var(--muted);text-decoration:none;font-weight:600;font-size:14px}
+.nav a:hover{background:var(--surface);color:var(--ink)}
+.nav a[aria-current="page"]{background:var(--ink);color:var(--bg)}
+h1{margin:0;font-size:34px;line-height:1.05;font-weight:800;font-stretch:72%}
+.sub{color:var(--muted);margin-top:4px}
+.who{color:var(--muted);font-size:14px;display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px}
+.linkish{background:none;border:0;padding:0;color:var(--accent);cursor:pointer;font-weight:600;text-decoration:none}
+.linkish:hover{text-decoration:underline}
+select{height:42px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:220px}
+.banner{display:none;margin:0 0 14px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-weight:500}
+.banner.show{display:block}
+
+/* Summary strip: one panel, four figures divided by rules */
+.summary{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-bottom:18px}
+.fig{padding:18px 20px;border-left:1px solid var(--line)}
+.fig:first-child{border-left:0}
+.fig .k{font-size:13px;color:var(--muted);font-weight:600}
+.fig .v{font-size:32px;font-weight:800;font-stretch:72%;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums}
+.fig .n{font-size:13px;color:var(--muted);margin-top:2px}
+.fig.alert .v{color:var(--warn)}
+@media (max-width:820px){.summary{grid-template-columns:1fr 1fr}.fig:nth-child(3){border-left:0}.fig:nth-child(n+3){border-top:1px solid var(--line)}}
+
+.grid{display:grid;grid-template-columns:1.25fr 1fr;gap:18px}
+@media (max-width:980px){.grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:20px;min-width:0}
+.card h2{margin:0 0 14px;font-size:18px;font-weight:800;font-stretch:80%;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.card h2 small{font-size:13px;font-weight:500;color:var(--muted);font-stretch:100%}
+.stack{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--track);margin-bottom:14px}
+.stack span{display:block;height:100%}
+.legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.legend{grid-template-columns:1fr 1fr}}
+.legend div{display:flex;flex-direction:column;padding:10px 12px;border-radius:8px;background:var(--surface-2)}
+.legend .lab{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);font-weight:600}
+.legend .lab i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.legend b{font-size:24px;font-stretch:72%;font-variant-numeric:tabular-nums}
+.c-available{background:var(--ok)} .c-in-use{background:var(--use)} .c-repair{background:var(--warn)} .c-retired{background:var(--off)}
+
+.bars{display:flex;flex-direction:column;gap:12px}
+.bar .row{display:flex;justify-content:space-between;gap:10px;font-size:14px;margin-bottom:5px}
+.bar .row span:first-child{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .row span:last-child{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar .track{height:8px;border-radius:999px;background:var(--track);overflow:hidden}
+.bar .fill{height:100%;border-radius:999px;background:var(--accent)}
+.bar a{color:inherit;text-decoration:none}
+.bar a:hover .row span:first-child{text-decoration:underline}
+
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.05em;text-transform:uppercase;padding:0 8px 8px;border-bottom:1px solid var(--line)}
+td{padding:10px 8px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.num{text-align:right}
+
+.list{list-style:none;margin:0;padding:0}
+.list li{border-bottom:1px solid var(--line)}
+.list li:last-child{border-bottom:0}
+.list a{display:grid;grid-template-columns:88px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 4px;color:inherit;text-decoration:none;border-radius:6px}
+.list a:hover{background:var(--surface-2)}
+.list .id{font-weight:800;font-stretch:72%;font-size:15px}
+.list .what{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list .what small{display:block;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis}
+.list .when{color:var(--muted);font-size:13px;white-space:nowrap;text-align:right}
+.tagw{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;background:var(--warn-soft);color:var(--warn);white-space:nowrap}
+.empty{color:var(--muted);padding:18px 0;text-align:center}
+.stackcol{display:flex;flex-direction:column;gap:18px;min-width:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <nav class="nav" aria-label="Modules"><a href="dashboard.html" aria-current="page">Dashboard</a><a href="index.html">Register</a><a href="database.html">Database</a></nav>
+      <h1>Dashboard</h1>
+      <div class="sub" id="sub">Loading…</div>
+    </div>
+    <div>
+      <div class="who"><span id="who"></span><button class="linkish" id="signOut" type="button">Sign out</button></div>
+      <select id="fProp" aria-label="Property"><option value="">All properties</option></select>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" role="status"></div>
+
+  <section class="summary" aria-label="Summary">
+    <div class="fig"><div class="k">Assets</div><div class="v" id="sCount">–</div><div class="n" id="sCountN"></div></div>
+    <div class="fig"><div class="k">Purchase cost</div><div class="v" id="sCost">–</div><div class="n" id="sCostN"></div></div>
+    <div class="fig"><div class="k">Current value</div><div class="v" id="sValue">–</div><div class="n" id="sValueN"></div></div>
+    <div class="fig" id="sAlertBox"><div class="k">Needs attention</div><div class="v" id="sAlert">–</div><div class="n" id="sAlertN"></div></div>
+  </section>
+
+  <div class="grid">
+    <div class="stackcol">
+      <section class="card">
+        <h2>Status</h2>
+        <div class="stack" id="stack" role="img"></div>
+        <div class="legend" id="legend"></div>
+      </section>
+      <section class="card">
+        <h2>By category <small>count · cost</small></h2>
+        <div class="bars" id="cats"></div>
+      </section>
+      <section class="card" id="propCard">
+        <h2>By property</h2>
+        <div style="overflow-x:auto"><table id="props"></table></div>
+      </section>
+    </div>
+    <div class="stackcol">
+      <section class="card">
+        <h2>Needs attention <small id="alertCount"></small></h2>
+        <ul class="list" id="alerts"></ul>
+      </section>
+      <section class="card">
+        <h2>Warranties ending <small>next 90 days</small></h2>
+        <ul class="list" id="warranty"></ul>
+      </section>
+      <section class="card">
+        <h2>Recent activity</h2>
+        <ul class="list" id="activity"></ul>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const SUPABASE_URL = "https://etiqbblpenjqdkkmdbjm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_RioLcLmP4qQxil5OXO8p-A_OjD9lY5D";
+const STATUS = [["available","Available"],["in-use","In use"],["repair","In repair"],["retired","Retired"]];
+const CAT_ICONS = { "IT / Electronics":"💻", "Communication Equipment":"📱", "Office Equipment":"🖨️", "Audio / Visual":"📺", "Appliances":"🔌", "Kitchen Equipment":"🍳", "Furniture":"🪑", "Vehicles / Transportation":"🚚", "Tools / Equipment":"🔧", "Housekeeping":"🧹" };
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const DAY = 864e5;
+const hasVal = v => v !== "" && v != null && !isNaN(v);
+const pl = (n, w) => n + " " + w + (n === 1 ? "" : "s");
+function parseDay(d){ if(!d) return null; const t = new Date(d + "T00:00:00"); return isNaN(t) ? null : t; }
+function daysUntil(d){ const t = parseDay(d); if(!t) return null; const n = new Date(); n.setHours(0,0,0,0); return Math.round((t - n) / DAY); }
+function fmtDay(d){ const t = parseDay(d); return t ? t.toLocaleDateString(undefined, { dateStyle:"medium" }) : ""; }
+function money(v){ return Number(v || 0).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+function short(v){ v = Number(v || 0); if(v >= 1e6) return (v/1e6).toFixed(v >= 1e7 ? 0 : 1) + "M"; if(v >= 1e4) return Math.round(v/1e3) + "K"; return money(v); }
+function ago(t){
+  const s = Math.round((Date.now() - t) / 1000);
+  if(s < 60) return "just now"; if(s < 3600) return pl(Math.floor(s/60), "min") + " ago"; if(s < 86400) return pl(Math.floor(s/3600), "hr") + " ago";
+  if(s < 7*86400) return pl(Math.floor(s/86400), "day") + " ago";
+  return new Date(t).toLocaleDateString(undefined, { dateStyle:"medium" });
+}
+function bookValue(a){
+  if(!hasVal(a.value)) return 0;
+  if(!Number(a.usefulLife) || !a.purchaseDate) return Number(a.value);
+  const t = parseDay(a.purchaseDate); if(!t) return Number(a.value);
+  const yrs = Math.max(0, (Date.now() - t) / (365.25*DAY));
+  return Math.max(0, Number(a.value) * (1 - yrs / Number(a.usefulLife)));
+}
+function issues(a){
+  const out = []; if(a.status === "retired") return out;
+  const due = daysUntil(a.dueDate);
+  if(a.status === "in-use" && due != null && due < 0) out.push({ sev:0, text:"Return overdue " + pl(-due,"day") + (a.assignee ? " · " + a.assignee : "") });
+  const s = daysUntil(a.nextService);
+  if(s != null && s <= 7) out.push({ sev: s < 0 ? 0 : 1, text: s < 0 ? "Service overdue " + pl(-s,"day") : s === 0 ? "Service due today" : "Service due in " + pl(s,"day") });
+  if(a.status === "repair") out.push({ sev:2, text:"In repair" });
+  return out;
+}
+const link = id => "index.html#" + encodeURIComponent(id);
+
+let sb = null, me = null, assets = [], loaded = false, prop = "";
+
+function render(){
+  if(!loaded) return;
+  const props = [...new Set(assets.map(a => a.property).filter(Boolean))].sort((a,b) => a.localeCompare(b));
+  if(prop && !props.includes(prop)) prop = "";
+  $("#fProp").innerHTML = '<option value="">All properties</option>' + props.map(p => '<option'+(p === prop ? ' selected' : '')+'>'+esc(p)+'</option>').join("");
+  $("#fProp").hidden = props.length < 2 && !prop;
+  const list = assets.filter(a => !prop || a.property === prop);
+  const active = list.filter(a => a.status !== "retired");
+  const cost = list.reduce((s, a) => s + (hasVal(a.value) ? Number(a.value) : 0), 0);
+  const value = active.reduce((s, a) => s + bookValue(a), 0);
+  const att = list.map(a => ({ a, iss: issues(a) })).filter(x => x.iss.length);
+  const missingCost = list.filter(a => !hasVal(a.value)).length;
+
+  $("#sub").textContent = (prop || "All properties") + " · updated " + new Date().toLocaleTimeString(undefined, { hour:"numeric", minute:"2-digit" });
+  $("#sCount").textContent = list.length; $("#sCountN").textContent = pl(active.length, "active asset");
+  $("#sCost").textContent = short(cost); $("#sCostN").textContent = missingCost ? pl(missingCost, "asset") + " without a cost" : "All assets have a cost";
+  $("#sValue").textContent = short(value); $("#sValueN").textContent = cost ? Math.round(value / cost * 100) + "% of cost, after depreciation" : "Straight-line depreciation";
+  $("#sAlert").textContent = att.length; $("#sAlertN").textContent = att.length ? "Overdue returns, service, repairs" : "Nothing needs action";
+  $("#sAlertBox").classList.toggle("alert", att.length > 0);
+
+  // Status
+  const counts = Object.fromEntries(STATUS.map(([k]) => [k, list.filter(a => a.status === k).length]));
+  const total = list.length || 1;
+  $("#stack").innerHTML = STATUS.map(([k]) => counts[k] ? '<span class="c-'+k+'" style="width:'+(counts[k]/total*100)+'%"></span>' : '').join("");
+  $("#stack").setAttribute("aria-label", STATUS.map(([k,l]) => l + " " + counts[k]).join(", "));
+  $("#legend").innerHTML = STATUS.map(([k,l]) => '<div><span class="lab"><i class="c-'+k+'"></i>'+l+'</span><b>'+counts[k]+'</b></div>').join("");
+
+  // Categories
+  const cats = {};
+  list.forEach(a => { const c = a.category || "Uncategorized"; cats[c] = cats[c] || { n:0, cost:0 }; cats[c].n++; cats[c].cost += hasVal(a.value) ? Number(a.value) : 0; });
+  const catRows = Object.entries(cats).sort((x,y) => y[1].n - x[1].n || y[1].cost - x[1].cost);
+  const maxN = Math.max(1, ...catRows.map(r => r[1].n));
+  $("#cats").innerHTML = catRows.length ? catRows.map(([c, v]) => '<div class="bar"><div class="row"><span>'+(CAT_ICONS[c] ? CAT_ICONS[c] + " " : "")+esc(c)+'</span><span>'+v.n+' · '+short(v.cost)+'</span></div><div class="track"><div class="fill" style="width:'+(v.n/maxN*100)+'%"></div></div></div>').join("") : '<div class="empty">No assets yet.</div>';
+
+  // Properties
+  const pr = {};
+  assets.forEach(a => { const p = a.property || "No property set"; pr[p] = pr[p] || { n:0, use:0, cost:0, val:0 }; pr[p].n++; if(a.status === "in-use") pr[p].use++; pr[p].cost += hasVal(a.value) ? Number(a.value) : 0; if(a.status !== "retired") pr[p].val += bookValue(a); });
+  const prRows = Object.entries(pr).sort((x,y) => y[1].n - x[1].n);
+  $("#propCard").hidden = prop !== "" || !prRows.length;
+  $("#props").innerHTML = '<thead><tr><th>Property</th><th class="num">Assets</th><th class="num">In use</th><th class="num">Cost</th><th class="num">Current value</th></tr></thead><tbody>' +
+    prRows.map(([p, v]) => '<tr><td>'+esc(p)+'</td><td class="num">'+v.n+'</td><td class="num">'+v.use+'</td><td class="num">'+money(v.cost)+'</td><td class="num">'+money(v.val)+'</td></tr>').join("") + '</tbody>';
+
+  // Alerts
+  att.sort((x,y) => Math.min(...x.iss.map(i => i.sev)) - Math.min(...y.iss.map(i => i.sev)));
+  $("#alertCount").textContent = att.length ? pl(att.length, "asset") : "";
+  $("#alerts").innerHTML = att.length ? att.slice(0, 12).map(({a, iss}) => '<li><a href="'+link(a.id)+'"><span class="id">'+esc(a.id)+'</span><span class="what">'+esc(a.name)+'<small>'+esc(iss.map(i => i.text).join(" · "))+'</small></span><span class="tagw">'+esc(iss[0].sev === 0 ? "Overdue" : iss[0].sev === 1 ? "Due soon" : "Repair")+'</span></a></li>').join("") : '<li class="empty">Nothing overdue or due soon.</li>';
+
+  // Warranties
+  const w = list.map(a => ({ a, d: daysUntil(a.warrantyEnd) })).filter(x => x.a.status !== "retired" && x.d != null && x.d >= 0 && x.d <= 90).sort((x,y) => x.d - y.d);
+  $("#warranty").innerHTML = w.length ? w.slice(0, 10).map(({a, d}) => '<li><a href="'+link(a.id)+'"><span class="id">'+esc(a.id)+'</span><span class="what">'+esc(a.name)+'<small>Ends '+esc(fmtDay(a.warrantyEnd))+'</small></span><span class="when">'+(d === 0 ? "today" : "in " + pl(d,"day"))+'</span></a></li>').join("") : '<li class="empty">No warranties end in the next 90 days.</li>';
+
+  // Activity
+  const acts = [];
+  list.forEach(a => (a.history || []).forEach(h => acts.push({ a, h })));
+  acts.sort((x,y) => y.h.t - x.h.t);
+  $("#activity").innerHTML = acts.length ? acts.slice(0, 12).map(({a, h}) => '<li><a href="'+link(a.id)+'"><span class="id">'+esc(a.id)+'</span><span class="what">'+esc(h.text)+'<small>'+esc(a.name)+(h.by ? " · " + esc(h.by) : "")+'</small></span><span class="when">'+esc(ago(h.t))+'</span></a></li>').join("") : '<li class="empty">No activity yet.</li>';
+}
+$("#fProp").addEventListener("change", e => { prop = e.target.value; render(); });
+
+function banner(msg){ const b = $("#banner"); b.textContent = msg || ""; b.classList.toggle("show", !!msg); }
+const rowToAsset = r => Object.assign({}, r.data, { id: r.id });
+async function loadAll(){
+  const r = await sb.from("assets").select("id,data");
+  if(r.error){ banner("The dashboard couldn’t load: " + r.error.message); return; }
+  assets = r.data.map(rowToAsset); loaded = true; banner(""); render();
+}
+let timer = 0;
+function subscribe(){
+  sb.channel("dashboard").on("postgres_changes", { event:"*", schema:"public", table:"assets" }, () => { clearTimeout(timer); timer = setTimeout(loadAll, 400); }).subscribe();
+}
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible" && me) loadAll(); });
+
+let signingOut = false;
+const toLogin = reason => location.replace("login.html?return=dashboard" + (reason ? "&reason=" + reason : ""));
+async function start(){
+  if(!window.supabase || typeof window.supabase.createClient !== "function"){ document.documentElement.classList.remove("booting"); banner("The sign-in service couldn’t load. Check your internet connection and reload the page."); return; }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const session = (await sb.auth.getSession()).data.session;
+  if(!session){ toLogin(); return; }
+  me = session.user;
+  const ok = await sb.rpc("is_staff");
+  if(ok.error || !ok.data){ toLogin(); return; }
+  const prof = await sb.from("staff").select("username,must_change_password").eq("email", (me.email || "").toLowerCase()).maybeSingle();
+  if(prof.data && prof.data.must_change_password){ toLogin(); return; }
+  $("#who").textContent = "Signed in as " + ((prof.data && prof.data.username) || me.email);
+  document.documentElement.classList.remove("booting");
+  sb.auth.onAuthStateChange((event, s) => { if(!s) setTimeout(() => toLogin(signingOut ? "signedout" : ""), 0); });
+  await loadAll(); subscribe();
+}
+$("#signOut").addEventListener("click", async () => { signingOut = true; await sb.auth.signOut(); toLogin("signedout"); });
+start();
+})();
+</script>
+</body>
+</html>

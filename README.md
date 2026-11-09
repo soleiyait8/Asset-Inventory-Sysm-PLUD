@@ -20,8 +20,9 @@ It runs as static pages on GitHub Pages, backed by a Supabase database, with sta
 
 ## Modules
 
-- **Register** (`index.html`): add and edit assets, print QR tags, scan tags, check items in and out, log service, and view each asset’s full record and history.
-- **Database** (`database.html`): every asset in one wide table with photo thumbnails. Search across all columns; filter by property, category, location, and status; click any column header to sort; choose which columns to show; see totals for cost and current value; export exactly what’s shown to CSV. Click a row to open that asset in the Register.
+- **Dashboard** (`dashboard.html`): the home page after sign-in. Totals for assets, purchase cost and current value; status breakdown; assets by category and by property; a “needs attention” list (overdue returns, service due, repairs); warranties ending in the next 90 days; and recent activity across all assets. Filter everything by property.
+- **Register** (`index.html`): add and edit assets, print QR tags, scan tags, check items in and out, transfer assets between properties, log service, and view each asset’s full record and history.
+- **Database** (`database.html`): every asset in one wide table with photo thumbnails. Search across all columns; filter by property, category, location, and status; click any column header to sort; choose which columns to show; see totals for cost and current value; export exactly what’s shown to CSV; **import** assets from a CSV or Excel file (columns are matched automatically, with a preview before saving; download a template from the import window). Click a row to open that asset in the Register.
 
 Each asset can have a **property** (e.g. Virgin Beach Resort, Z Hostel), **category** and **sub-category**, **brand**, and a **photo**. Photos are resized in the browser and stored privately in Supabase Storage; only signed-in staff can see them. An asset’s QR tag prints “Property of” its property.
 

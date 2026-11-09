@@ -222,7 +222,7 @@ label.f textarea{height:76px;padding:8px 10px;resize:vertical}
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <nav class="nav" aria-label="Modules"><a href="index.html" aria-current="page">Register</a><a href="database.html">Database</a></nav>
+      <nav class="nav" aria-label="Modules"><a href="dashboard.html">Dashboard</a><a href="index.html" aria-current="page">Register</a><a href="database.html">Database</a></nav>
       <h1>Asset Register</h1>
       <div class="org"><span id="orgName">Your organization</span> <button class="linkish" id="editOrg" type="button">Rename</button></div>
       <div class="org"><span id="who"></span> <button class="linkish" id="signOut" type="button">Sign out</button></div>
@@ -642,7 +642,7 @@ function renderDrawer(){
     else if(a.status !== "retired") acts += '<button class="btn small primary" data-act="checkout">Check out</button>';
     if(a.status !== "repair" && a.status !== "retired") acts += '<button class="btn small" data-act="repair">Send to repair</button>';
     if(a.status === "repair") acts += '<button class="btn small" data-act="repaired">Mark repaired</button>';
-    acts += '<button class="btn small" data-act="move">Move</button><button class="btn small" data-act="service">Log service</button><button class="btn small" data-act="edit">Edit</button>';
+    acts += '<button class="btn small" data-act="transfer">Transfer</button><button class="btn small" data-act="move">Move</button><button class="btn small" data-act="service">Log service</button><button class="btn small" data-act="edit">Edit</button>';
   }
   acts += '<button class="btn small" data-act="print">Print label</button>';
   if(downloads) acts += '<button class="btn small" data-act="download">Download label</button>';
@@ -823,6 +823,14 @@ async function act(name, id){
   } else if(name === "move"){
     const loc = await ask({ title:"Move " + a.id, input:{label:"New location", value:a.location, list:"locList"}, okLabel:"Move" });
     if(!loc || loc === a.location) return; log("Moved from " + (a.location || "no location") + " to " + loc); a.location = loc;
+  } else if(name === "transfer"){
+    const to = await ask({ title:"Transfer " + a.id, message:"Move this asset to another property. Currently: " + (a.property || "no property set") + ".", input:{label:"New property", value:"", list:"propList"}, okLabel:"Next" });
+    if(!to) return;
+    if(to === a.property){ toast("It’s already at " + to + "."); return; }
+    const loc = await ask({ title:"Location at " + to, message:"Where will it be kept? Leave blank if not known yet.", input:{label:"New location (optional)", value:"", list:"locList"}, okLabel:"Transfer" });
+    if(loc === null) return;
+    log("Transferred from " + (a.property || "no property") + " to " + to + (loc ? ", " + loc : ""));
+    a.property = to; a.location = loc || "";
   } else if(name === "retire"){
     const ok = await ask({ title:"Retire " + a.id + "?", message:"It stays in the register for your records but can’t be checked out.", okLabel:"Retire" });
     if(!ok) return; a.status = "retired"; a.assignee = ""; log("Retired");
