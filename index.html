@@ -837,6 +837,10 @@ function closeDrawer(){
 }
 function routeFromHash(){
   const h = decodeURIComponent(location.hash.slice(1));
+  if(h === "attention"){
+    history.replaceState(null, "", location.pathname + location.search);
+    filter.status = "attention"; renderAll(); return;
+  }
   if(h === "scan" || h === "add"){
     history.replaceState(null, "", location.pathname + location.search);
     if(h === "scan") $("#btnScan").click(); else if(canWrite) openForm();

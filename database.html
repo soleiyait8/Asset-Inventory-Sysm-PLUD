@@ -71,6 +71,8 @@ h1{margin:0;font-size:34px;line-height:1.05;font-weight:800;font-stretch:72%}
 
 .banner{display:none;margin:0 0 14px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-weight:500}
 .banner.show{display:block}
+.mchip{display:inline-flex;align-items:center;gap:8px;margin:0 0 12px;padding:6px 8px 6px 14px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:14px}
+.mchip button{border:0;background:rgba(0,0,0,.08);color:inherit;width:24px;height:24px;border-radius:50%;cursor:pointer;font-weight:700}
 
 .tablebox{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:auto;max-height:calc(100vh - 230px);box-shadow:var(--shadow)}
 table{border-collapse:separate;border-spacing:0;width:100%;min-width:900px}
@@ -169,6 +171,7 @@ details{margin-top:10px;font-size:14px;color:var(--muted)} details ul{margin:6px
   </header>
 
   <div class="banner" id="banner" role="status"></div>
+  <div id="missingChip"></div>
 
   <div class="filters">
     <input class="q" id="q" type="search" placeholder="Search any column…" aria-label="Search any column">
@@ -278,7 +281,17 @@ function saveCols(){ try{ localStorage.setItem(COLS_KEY, JSON.stringify([...visi
 /* ---------- State ---------- */
 let sb = null, me = null, channel = null, assets = [], loaded = false, myName = "";
 let sortKey = "id", sortDir = 1;
-const filter = { q:"", prop:"", cat:"", loc:"", status:"" };
+const filter = { q:"", prop:"", cat:"", loc:"", status:"", missing:"" };
+// Links from the Dashboard open the Database already filtered, e.g. database.html?status=in-use&property=Z%20Hostel
+const MISSING = { photo:"a photo", serial:"a serial number", cost:"a cost", location:"a location", category:"a category" };
+(function(){
+  const u = new URLSearchParams(location.search);
+  filter.q = (u.get("q") || "").trim(); filter.prop = u.get("property") || ""; filter.cat = u.get("category") || "";
+  filter.loc = u.get("location") || ""; filter.status = STATUS[u.get("status")] ? u.get("status") : "";
+  filter.missing = MISSING[u.get("missing")] ? u.get("missing") : "";
+  if(location.search) history.replaceState(null, "", location.pathname);
+})();
+const missingOf = (a, m) => m === "photo" ? !a.photo : m === "serial" ? !a.serial : m === "cost" ? !hasVal(a.value) : m === "location" ? !a.location : m === "category" ? !a.category : false;
 const photoUrls = new Map();
 
 function thumbHtml(a){
@@ -302,7 +315,11 @@ function opts(sel, label, values, cur){
   sel.innerHTML = '<option value="">'+esc(label)+'</option>' + values.map(v => '<option'+(v === cur ? ' selected' : '')+'>'+esc(v)+'</option>').join("");
 }
 const uniq = k => [...new Set(assets.map(a => a[k]).filter(Boolean))].sort((x,y) => x.localeCompare(y));
+function renderMissing(){
+  $("#missingChip").innerHTML = filter.missing ? '<span class="mchip">Showing active assets without '+esc(MISSING[filter.missing])+' <button type="button" id="clearMissing" aria-label="Remove this filter">✕</button></span>' : "";
+}
 function renderFilters(){
+  renderMissing();
   ["prop","cat","loc"].forEach(f => { const k = { prop:"property", cat:"category", loc:"location" }[f]; if(filter[f] && !uniq(k).includes(filter[f])) filter[f] = ""; });
   opts($("#fProp"), "All properties", uniq("property"), filter.prop);
   opts($("#fCat"), "All categories", uniq("category"), filter.cat);
@@ -316,6 +333,7 @@ function rows(){
     if(filter.cat && a.category !== filter.cat) return false;
     if(filter.loc && a.location !== filter.loc) return false;
     if(filter.status && a.status !== filter.status) return false;
+    if(filter.missing && (!missingOf(a, filter.missing) || a.status === "retired" || a.status === "disposed")) return false;
     if(words.length){
       const hay = COLS.map(c => cellText(c, a)).concat([a.notes, a.supplier, a.invoice]).join(" ").toLowerCase();
       if(!words.every(w => hay.includes(w))) return false;
@@ -358,7 +376,9 @@ function renderColMenu(){
 }
 
 /* ---------- Events ---------- */
+$("#q").value = filter.q;
 $("#q").addEventListener("input", e => { filter.q = e.target.value.trim(); render(); });
+document.addEventListener("click", e => { if(e.target.id === "clearMissing"){ filter.missing = ""; render(); } });
 [["#fProp","prop"],["#fCat","cat"],["#fLoc","loc"],["#fStatus","status"]].forEach(([s,k]) => $(s).addEventListener("change", e => { filter[k] = e.target.value; render(); }));
 $("#tablebox").addEventListener("click", e => {
   const sb2 = e.target.closest("[data-sort]");
