@@ -12,11 +12,12 @@
     out:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg>',
     collapse:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
     settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>',
+    users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>',
     menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
     mark:'<svg viewBox="0 0 22 22" shape-rendering="crispEdges"><rect width="22" height="22" fill="#fff"/><path fill="#151A20" d="M2 2h7v7H2zM13 2h7v7h-7zM2 13h7v7H2z"/><path fill="#fff" d="M3.5 3.5h4v4h-4zM14.5 3.5h4v4h-4zM3.5 14.5h4v4h-4z"/><path fill="#151A20" d="M4.5 4.5h2v2h-2zM15.5 4.5h2v2h-2zM4.5 15.5h2v2h-2zM13 13h3v3h-3zM17 16h3v4h-3zM13 18h3v2h-3z"/></svg>'
   };
   var modules = [["dashboard","dashboard.html","Dashboard"],["register","index.html","Register"],["database","database.html","Database"]];
-  var title = page === "settings" ? "Settings" : (modules.filter(function(m){ return m[0] === page; })[0] || [,,"Asset Register"])[2];
+  var title = page === "settings" ? "Settings" : page === "users" ? "Users" : (modules.filter(function(m){ return m[0] === page; })[0] || [,,"Asset Register"])[2];
 
   try{ if(localStorage.getItem("sb-collapsed") === "1") document.documentElement.classList.add("sb-collapsed"); }catch(e){}
 
@@ -31,12 +32,13 @@
       '<nav aria-label="Modules"><div class="sb-label">Modules</div>'+nav+
         '<div class="sb-label">Quick actions</div>'+
         '<a class="sb-item" href="index.html#scan" title="Scan tag">'+I.scan+'<span class="sb-text">Scan tag</span></a>'+
-        '<a class="sb-item" href="index.html#add" title="Add asset">'+I.add+'<span class="sb-text">Add asset</span></a>'+
-        '<div class="sb-label">System</div>'+
-        '<a class="sb-item" href="settings.html"'+(page === "settings" ? ' aria-current="page"' : '')+' title="Settings">'+I.settings+'<span class="sb-text">Settings</span></a>'+
+        '<a class="sb-item" data-edit-only hidden href="index.html#add" title="Add asset">'+I.add+'<span class="sb-text">Add asset</span></a>'+
+        '<div class="sb-label" data-admin-only hidden>System</div>'+
+        '<a class="sb-item" data-admin-only hidden href="users.html"'+(page === "users" ? ' aria-current="page"' : '')+' title="Users">'+I.users+'<span class="sb-text">Users</span></a>'+
+        '<a class="sb-item" data-admin-only hidden href="settings.html"'+(page === "settings" ? ' aria-current="page"' : '')+' title="Settings">'+I.settings+'<span class="sb-text">Settings</span></a>'+
       '</nav>'+
       '<div class="sb-foot">'+
-        '<div class="sb-user"><span class="sb-avatar" id="sbAvatar" aria-hidden="true">·</span><span class="sb-who"><small>Signed in as</small><span id="who"></span></span></div>'+
+        '<div class="sb-user"><span class="sb-avatar" id="sbAvatar" aria-hidden="true">·</span><span class="sb-who"><small id="sbRole">Signed in as</small><span id="who"></span></span></div>'+
         '<div class="sb-row"><button class="sb-btn sb-signout" type="button" id="signOut" title="Sign out">'+I.out+'<span class="sb-text">Sign out</span></button>'+
         '<button class="sb-btn sb-collapse" type="button" id="sbCollapse" aria-label="Collapse menu" title="Collapse menu">'+I.collapse+'</button></div>'+
       '</div>'+
@@ -61,6 +63,14 @@
     syncCol();
   });
   syncCol();
+
+  // Pages call Shell.setRole(role) once they know who is signed in
+  var ROLE_LABEL = { admin:"Administrator", editor:"Editor", viewer:"Viewer" };
+  window.Shell = { setRole: function(role){
+    document.querySelectorAll("[data-admin-only]").forEach(function(el){ el.hidden = role !== "admin"; });
+    document.querySelectorAll("[data-edit-only]").forEach(function(el){ el.hidden = !(role === "admin" || role === "editor"); });
+    var r = document.getElementById("sbRole"); if(r) r.textContent = ROLE_LABEL[role] || "Signed in as";
+  } };
 
   // Avatar initial follows the signed-in name
   var who = document.getElementById("who"), av = document.getElementById("sbAvatar");

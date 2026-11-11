@@ -487,7 +487,7 @@ async function loadAll(){
   assets = res.data.map(rowToAsset);
   const st = await sb.from("settings").select("key,data");
   (st.data || []).forEach(r => { if(r.key === "main") settings = Object.assign({org:""}, r.data); if(r.key === "catalog") catalog = { properties: r.data.properties || [], locations: r.data.locations || [] }; });
-  if(!st.error && !(st.data || []).some(r => r.key === "catalog")) seedCatalog();
+  if(!st.error && isAdmin && !(st.data || []).some(r => r.key === "catalog")) seedCatalog();
   loaded = true; banner(""); renderAll(); routeFromHash();
 }
 function subscribe(){
@@ -718,7 +718,7 @@ function renderDrawer(){
   if(downloads) acts += '<button class="btn small" data-act="download">Download label</button>';
   if(w){
     acts += inactive(a.status) ? '<button class="btn small" data-act="restore">Restore</button>' : '<button class="btn small" data-act="retire">Retire</button><button class="btn small" data-act="dispose">Dispose</button>';
-    acts += '<button class="btn small danger" data-act="delete">Delete</button>';
+    if(isAdmin) acts += '<button class="btn small danger" data-act="delete">Delete</button>';
   }
   const hist = (a.history||[]).slice().reverse();
   const st = STATUS[a.status] || STATUS.available;
@@ -816,7 +816,7 @@ function primeThumbs(){
 
 function renderAll(){
   $("#orgName").textContent = settings.org || "Your organization";
-  $("#editOrg").hidden = !canWrite;
+  $("#editOrg").hidden = !isAdmin;
   $("#btnAdd").hidden = !canWrite;
   $("#btnExport").hidden = !downloads || !assets.length;
   renderChips(); renderCatFilter(); renderTable(); renderSelbar(); renderDrawer();
@@ -931,7 +931,8 @@ async function seedCatalog(){
 }
 const sameName = (x, y) => String(x || "").trim().toLowerCase() === String(y || "").trim().toLowerCase();
 function propNames(){
-  const list = catalog.properties.length ? catalog.properties.map(p => p.name) : BASE_PROPS.slice();
+  let list = catalog.properties.length ? catalog.properties.map(p => p.name) : BASE_PROPS.slice();
+  if(myProps && myProps.length) list = list.filter(n => myProps.some(p => sameName(p, n))).concat(myProps.filter(p => !list.some(n => sameName(n, p))));
   return [...new Set(list)].sort((x, y) => x.localeCompare(y));
 }
 function locNames(prop){
@@ -1157,15 +1158,18 @@ async function onSession(session){
   me = session.user;
   const r = await sb.rpc("is_staff");
   if(r.error || !r.data){ goToLogin(); return; }
-  const prof = await sb.from("staff").select("username,name,must_change_password").eq("email", (me.email || "").toLowerCase()).maybeSingle();
+  const prof = await sb.from("staff").select("username,name,must_change_password,role,properties").eq("email", (me.email || "").toLowerCase()).maybeSingle();
   if(prof.data && prof.data.must_change_password){ goToLogin(); return; }
   myName = (prof.data && prof.data.username) || me.email;
+  myRole = (prof.data && prof.data.role) || "viewer"; myProps = (prof.data && prof.data.properties) || null;
+  canWrite = myRole === "admin" || myRole === "editor"; isAdmin = myRole === "admin";
+  if(window.Shell) Shell.setRole(myRole);
   $("#who").textContent = myName; if(prof.data && prof.data.name) $("#who").title = prof.data.name;
   document.documentElement.classList.remove("booting");
   mode = "db"; loaded = false; renderAll();
   await loadAll(); subscribe();
 }
-let signingOut = false, myName = "";
+let signingOut = false, myName = "", myRole = "viewer", myProps = null, isAdmin = false;
 $("#signOut").addEventListener("click", async () => { signingOut = true; await sb.auth.signOut(); goToLogin("signedout"); });
 
 /* ---------- Init ---------- */

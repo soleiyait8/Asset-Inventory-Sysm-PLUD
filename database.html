@@ -617,9 +617,13 @@ async function start(){
   me = session.user;
   const ok = await sb.rpc("is_staff");
   if(ok.error || !ok.data){ toLogin(); return; }
-  const prof = await sb.from("staff").select("username,name,must_change_password").eq("email", (me.email || "").toLowerCase()).maybeSingle();
+  const prof = await sb.from("staff").select("username,name,must_change_password,role").eq("email", (me.email || "").toLowerCase()).maybeSingle();
   if(prof.data && prof.data.must_change_password){ toLogin(); return; }
   myName = (prof.data && prof.data.username) || me.email;
+  const myRole = (prof.data && prof.data.role) || "viewer";
+  if(window.Shell) Shell.setRole(myRole);
+  $("#importBtn").hidden = myRole === "viewer";
+  document.querySelectorAll(".actions a.btn.primary").forEach(el => el.hidden = myRole === "viewer");
   $("#who").textContent = myName;
   document.documentElement.classList.remove("booting");
   sb.auth.onAuthStateChange((event, s) => { if(!s) setTimeout(() => toLogin(signingOut ? "signedout" : ""), 0); });

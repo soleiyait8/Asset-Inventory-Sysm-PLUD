@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en" class="booting">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Users · Asset Register</title>
+<link rel="stylesheet" href="shell.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#EDF0F2; --surface:#FFFFFF; --surface-2:#F5F7F8; --ink:#1C2430; --muted:#5E6A77; --line:#D5DBE0;
+  --accent:#1F5FD1; --accent-ink:#FFFFFF; --accent-soft:#E3ECFB;
+  --ok:#1E7A4C; --ok-soft:#DDF1E6; --warn:#9A5B00; --warn-soft:#FBEBCF; --danger:#B42318; --danger-soft:#FDE7E5;
+  --violet:#6B3FA0; --violet-soft:#EFE6FA; --off:#6B7480; --off-soft:#E6E9EC;
+  --shadow:0 1px 2px rgba(28,36,48,.05),0 6px 18px rgba(28,36,48,.06);
+  --font:"Archivo", "Helvetica Neue", Arial, system-ui, sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#161C23; --surface:#1F2731; --surface-2:#252E39; --ink:#E7ECF1; --muted:#9AA6B3; --line:#33404D;
+    --accent:#6E9BF0; --accent-ink:#0E1620; --accent-soft:#22324C;
+    --ok:#5CC991; --ok-soft:#1C3A2B; --warn:#E8B04F; --warn-soft:#3D3019; --danger:#F07467; --danger-soft:#3E201E;
+    --violet:#C3A3EC; --violet-soft:#33284A; --off:#9AA3AD; --off-soft:#2C343E;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#161C23; --surface:#1F2731; --surface-2:#252E39; --ink:#E7ECF1; --muted:#9AA6B3; --line:#33404D;
+  --accent:#6E9BF0; --accent-ink:#0E1620; --accent-soft:#22324C;
+  --ok:#5CC991; --ok-soft:#1C3A2B; --warn:#E8B04F; --warn-soft:#3D3019; --danger:#F07467; --danger-soft:#3E201E;
+  --violet:#C3A3EC; --violet-soft:#33284A; --off:#9AA3AD; --off-soft:#2C343E;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.booting .wrap{visibility:hidden}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 24px 56px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+h1{margin:0;font-size:34px;line-height:1.05;font-weight:800;font-stretch:72%}
+.sub{color:var(--muted);margin-top:4px}
+.banner{display:none;margin:0 0 14px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-weight:500}
+.banner.show{display:block}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:600;white-space:nowrap;color:var(--ink);text-decoration:none}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.small{height:32px;padding:0 10px;font-size:13px}
+.btn.danger{color:var(--danger)}
+.btn svg{width:18px;height:18px}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);min-width:0}
+
+/* User list */
+.ulist{list-style:none;margin:0;padding:0}
+.urow{display:grid;grid-template-columns:44px minmax(0,1.6fr) minmax(0,1fr) minmax(0,1.3fr) 312px;gap:14px;align-items:center;padding:14px 16px;border-top:1px solid var(--line)}
+.urow:first-child{border-top:0}
+.urow.off{opacity:.62}
+.av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:18px;background:var(--surface-2);color:var(--ink);text-transform:uppercase}
+.uname{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uname .you{margin-left:6px;font-size:12px;font-weight:600;color:var(--muted)}
+.umeta{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap}
+.r-admin{background:var(--violet-soft);color:var(--violet)}
+.r-editor{background:var(--accent-soft);color:var(--accent)}
+.r-viewer{background:var(--off-soft);color:var(--off)}
+.st-off{background:var(--danger-soft);color:var(--danger)}
+.st-pw{background:var(--warn-soft);color:var(--warn)}
+.access{font-size:14px;overflow:hidden;text-overflow:ellipsis}
+.access small{display:block;color:var(--muted);font-size:12px}
+.uacts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+@media (max-width:900px){
+  .urow{grid-template-columns:44px minmax(0,1fr);grid-template-areas:"av who" "av role" "av acc" "acts acts"}
+  .urow .av{grid-area:av;align-self:start}.urow .c-who{grid-area:who}.urow .c-role{grid-area:role}.urow .c-acc{grid-area:acc}.urow .uacts{grid-area:acts;justify-content:flex-start}
+}
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+
+/* Permissions table */
+.perm{margin-top:18px;padding:20px}
+.perm h2{margin:0 0 4px;font-size:20px;font-weight:800;font-stretch:80%}
+.perm p{margin:0 0 14px;color:var(--muted);font-size:14px}
+.ptable{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td.c,th.c{text-align:center}
+.yes{color:var(--ok);font-weight:800}.no{color:var(--muted)}
+tr:last-child td{border-bottom:0}
+
+/* Dialogs */
+dialog{border:0;border-radius:14px;padding:0;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);width:min(600px,calc(100% - 24px));max-height:calc(100% - 24px)}
+dialog::backdrop{background:rgba(10,14,20,.45)}
+.dlg{padding:22px;display:flex;flex-direction:column;gap:14px}
+.dlg h2{margin:0;font-size:22px;font-stretch:80%}
+.dlg .lead{margin:-8px 0 0;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:540px){.grid2{grid-template-columns:1fr}}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:14px;font-weight:600}
+label.f input,label.f select{font-weight:400;height:42px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);width:100%}
+label.f input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.hint{font-size:13px;color:var(--muted);font-weight:400}
+.pwrow{display:flex;gap:8px}.pwrow input{flex:1}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-size:14px;font-weight:600;margin-bottom:6px;padding:0}
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media (max-width:540px){.roles{grid-template-columns:1fr}}
+.role{position:relative;display:block;padding:12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--surface)}
+.role input{position:absolute;opacity:0;pointer-events:none}
+.role b{display:block;font-size:15px}
+.role span{display:block;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.35}
+.role:has(input:checked){border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.role:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.radios{display:flex;gap:16px;flex-wrap:wrap}
+.radios label,.checks label,.check{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:14px}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}
+input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;height:16px}
+.dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px;flex-wrap:wrap}
+.err{color:var(--danger);font-size:14px;min-height:1.3em}
+.creds{border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:14px}
+.creds dl{display:grid;grid-template-columns:150px 1fr;gap:6px 12px;margin:0}
+.creds dt{color:var(--muted)}.creds dd{margin:0;font-weight:700;word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;opacity:0;transition:.2s;pointer-events:none;z-index:60;font-weight:500}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<script src="shell.js" data-page="users"></script>
+<div class="wrap">
+  <header class="top">
+    <div><h1>Users</h1><div class="sub" id="sub">Accounts that can sign in, and what each one is allowed to do.</div></div>
+    <button class="btn primary" type="button" id="addUser" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add user</button>
+  </header>
+  <div class="banner" id="banner" role="status"></div>
+  <section class="card" id="listCard"><ul class="ulist" id="ulist"><li class="empty">Loading users…</li></ul></section>
+
+  <section class="card perm" aria-labelledby="permH">
+    <h2 id="permH">What each role can do</h2>
+    <p>Property access applies on top of the role: a user limited to Z Hostel only sees and works with Z Hostel assets.</p>
+    <div class="ptable"><table>
+      <thead><tr><th>Permission</th><th class="c">Admin</th><th class="c">Editor</th><th class="c">Viewer</th></tr></thead>
+      <tbody>
+        <tr><td>View dashboard, assets and photos</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>Scan tags, print labels, export CSV</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>Add and edit assets, upload photos, import</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">–</td></tr>
+        <tr><td>Check in/out, move, transfer, repair, service, retire, dispose</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c no">–</td></tr>
+        <tr><td>Delete assets</td><td class="c yes">✓</td><td class="c no">–</td><td class="c no">–</td></tr>
+        <tr><td>Settings (organization, properties, locations)</td><td class="c yes">✓</td><td class="c no">–</td><td class="c no">–</td></tr>
+        <tr><td>Manage users</td><td class="c yes">✓</td><td class="c no">–</td><td class="c no">–</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+</div>
+
+<dialog id="userDlg" aria-labelledby="uTitle">
+  <form class="dlg" id="userForm" novalidate>
+    <h2 id="uTitle">Add user</h2>
+    <p class="lead" id="uLead">They’ll sign in with the username and password you set here.</p>
+    <div class="grid2">
+      <label class="f">Full name<input id="fName" autocomplete="off" placeholder="e.g. Juan Dela Cruz"></label>
+      <label class="f">Username<input id="fUser" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="e.g. jdelacruz"></label>
+    </div>
+    <label class="f" id="emailWrap">Email <span class="hint">Optional. Used for “Forgot password?” emails.</span><input id="fEmail" type="email" autocomplete="off" placeholder="name@company.com"></label>
+    <div id="pwWrap">
+      <label class="f">Temporary password
+        <span class="pwrow"><input id="fPass" type="text" autocomplete="new-password" spellcheck="false"><button class="btn" type="button" id="genPass">Generate</button></span>
+      </label>
+      <label class="check" style="margin-top:8px"><input type="checkbox" id="fMust" checked> Ask them to choose their own password at first sign-in</label>
+    </div>
+    <fieldset>
+      <legend>Role</legend>
+      <div class="roles">
+        <label class="role"><input type="radio" name="role" value="admin"><b>Admin</b><span>Everything, including users, settings and deleting assets.</span></label>
+        <label class="role"><input type="radio" name="role" value="editor" checked><b>Editor</b><span>Add, edit, move and check out assets. No deleting or settings.</span></label>
+        <label class="role"><input type="radio" name="role" value="viewer"><b>Viewer</b><span>Look up, scan and export only. Can’t change anything.</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Property access</legend>
+      <div class="radios"><label><input type="radio" name="access" value="all" checked> All properties</label><label><input type="radio" name="access" value="some"> Only selected properties</label></div>
+      <div class="checks" id="propChecks" hidden></div>
+    </fieldset>
+    <label class="check" id="activeWrap" hidden><input type="checkbox" id="fActive" checked> Account is active (untick to block sign-in without deleting)</label>
+    <div class="err" id="uErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn" type="button" id="uCancel">Cancel</button><button class="btn primary" type="submit" id="uOk">Add user</button></div>
+  </form>
+</dialog>
+
+<dialog id="pwDlg" aria-labelledby="pwTitle">
+  <form class="dlg" id="pwForm" novalidate>
+    <h2 id="pwTitle">Reset password</h2>
+    <p class="lead" id="pwLead"></p>
+    <label class="f">New temporary password<span class="pwrow"><input id="pPass" type="text" autocomplete="new-password" spellcheck="false"><button class="btn" type="button" id="pGen">Generate</button></span></label>
+    <label class="check"><input type="checkbox" id="pMust" checked> Ask them to choose their own password at next sign-in</label>
+    <div class="err" id="pErr" role="alert"></div>
+    <div class="dlg-actions"><button class="btn" type="button" id="pCancel">Cancel</button><button class="btn primary" type="submit" id="pOk">Reset password</button></div>
+  </form>
+</dialog>
+
+<dialog id="doneDlg" aria-labelledby="dTitle">
+  <div class="dlg">
+    <h2 id="dTitle">User added</h2>
+    <p class="lead">Share these sign-in details with them. The password won’t be shown again.</p>
+    <div class="creds"><dl id="credList"></dl></div>
+    <div class="dlg-actions"><button class="btn" type="button" id="copyCreds">Copy details</button><button class="btn primary" type="button" id="dClose">Done</button></div>
+  </div>
+</dialog>
+
+<dialog id="confirmDlg" aria-labelledby="cfTitle">
+  <form class="dlg" id="confirmForm">
+    <h2 id="cfTitle"></h2>
+    <p class="lead" id="cfMsg"></p>
+    <div class="dlg-actions"><button class="btn" type="button" id="cfCancel">Cancel</button><button class="btn primary" type="submit" id="cfOk">OK</button></div>
+  </form>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+const SUPABASE_URL = "https://etiqbblpenjqdkkmdbjm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_RioLcLmP4qQxil5OXO8p-A_OjD9lY5D";
+const SITE_URL = "https://soleiyait8.github.io/Asset-Inventory-Sysm-PLUD/";
+const ROLE = { admin:"Admin", editor:"Editor", viewer:"Viewer" };
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(m){ const t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2600); }
+function banner(m){ const b = $("#banner"); b.textContent = m || ""; b.classList.toggle("show", !!m); }
+const isPlaceholder = e => /\.noemail@example\.com$/.test(e || "") || e === "plud.admin@example.com";
+function genPassword(){
+  const a = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789", b = new Uint32Array(10); crypto.getRandomValues(b);
+  const s = Array.from(b, x => a[x % a.length]).join(""); return s.slice(0,5) + "-" + s.slice(5);
+}
+function ago(t){
+  if(!t) return "Never signed in";
+  const s = (Date.now() - new Date(t)) / 1000;
+  if(s < 3600) return "Last sign-in: just now"; if(s < 86400) return "Last sign-in: " + Math.floor(s/3600) + " hr ago";
+  return "Last sign-in: " + new Date(t).toLocaleDateString(undefined, { dateStyle:"medium" });
+}
+
+let sb = null, me = null, users = [], properties = [];
+
+async function call(body){
+  const { data, error } = await sb.functions.invoke("manage-users", { body });
+  if(!error) return { data };
+  let msg = "Something went wrong. Try again.";
+  try{ const j = await error.context.json(); msg = j.message || msg; }catch(e){ if(error.message && !/non-2xx/i.test(error.message)) msg = error.message; }
+  return { error: msg };
+}
+async function load(){
+  const r = await call({ action:"list" });
+  if(r.error){ banner(r.error); return; }
+  users = r.data.users; me = r.data.me; render();
+}
+
+function render(){
+  const active = users.filter(u => u.active).length;
+  $("#sub").textContent = users.length + (users.length === 1 ? " account" : " accounts") + " · " + active + " active";
+  $("#ulist").innerHTML = users.length ? users.map(u => {
+    const self = u.email === me;
+    const acc = u.properties && u.properties.length ? '<span class="access">'+esc(u.properties.join(", "))+'<small>Limited to '+u.properties.length+(u.properties.length === 1 ? ' property' : ' properties')+'</small></span>' : '<span class="access">All properties<small>No property limit</small></span>';
+    return '<li class="urow'+(u.active ? '' : ' off')+'">'+
+      '<span class="av" aria-hidden="true">'+esc((u.name || u.username).slice(0,1))+'</span>'+
+      '<span class="c-who" style="min-width:0"><div class="uname">'+esc(u.name || u.username)+(self ? '<span class="you">(you)</span>' : '')+'</div><div class="umeta">@'+esc(u.username)+' · '+(isPlaceholder(u.email) ? 'No email' : esc(u.email))+'</div><div class="umeta">'+esc(ago(u.last_sign_in_at))+'</div></span>'+
+      '<span class="c-role badges"><span class="badge r-'+esc(u.role)+'">'+esc(ROLE[u.role] || u.role)+'</span>'+(u.active ? '' : '<span class="badge st-off">Disabled</span>')+(u.must_change_password && u.active ? '<span class="badge st-pw">Temp password</span>' : '')+'</span>'+
+      '<span class="c-acc">'+acc+'</span>'+
+      '<span class="uacts"><button class="btn small" type="button" data-edit="'+esc(u.email)+'">Edit</button><button class="btn small" type="button" data-pw="'+esc(u.email)+'">Reset password</button>'+
+        (self ? '' : '<button class="btn small" type="button" data-toggle="'+esc(u.email)+'">'+(u.active ? 'Disable' : 'Enable')+'</button><button class="btn small danger" type="button" data-del="'+esc(u.email)+'">Delete</button>')+'</span></li>';
+  }).join("") : '<li class="empty">No users yet.</li>';
+}
+
+/* ---------- Add / edit ---------- */
+let editing = null;
+function fillProps(selected){
+  const all = properties.slice(); (selected || []).forEach(p => { if(!all.includes(p)) all.push(p); });
+  $("#propChecks").innerHTML = all.length ? all.map(p => '<label><input type="checkbox" value="'+esc(p)+'"'+((selected || []).includes(p) ? ' checked' : '')+'> '+esc(p)+'</label>').join("") : '<span class="hint">No properties yet. Add them in Settings.</span>';
+}
+function setAccess(mode){ document.querySelector('input[name="access"][value="'+mode+'"]').checked = true; $("#propChecks").hidden = mode !== "some"; }
+document.querySelectorAll('input[name="access"]').forEach(r => r.addEventListener("change", () => setAccess(r.value)));
+function openUser(u){
+  editing = u || null;
+  $("#uTitle").textContent = u ? "Edit " + (u.name || u.username) : "Add user";
+  $("#uLead").textContent = u ? "Change their details, role or property access." : "They’ll sign in with the username and password you set here.";
+  $("#uOk").textContent = u ? "Save changes" : "Add user";
+  $("#fName").value = u ? (u.name || "") : ""; $("#fUser").value = u ? u.username : "";
+  $("#emailWrap").hidden = !!u; $("#fEmail").value = "";
+  $("#pwWrap").hidden = !!u; $("#fPass").value = u ? "" : genPassword(); $("#fMust").checked = true;
+  document.querySelector('input[name="role"][value="'+(u ? u.role : "editor")+'"]').checked = true;
+  fillProps(u && u.properties); setAccess(u && u.properties && u.properties.length ? "some" : "all");
+  $("#activeWrap").hidden = !u; $("#fActive").checked = u ? u.active : true;
+  const self = u && u.email === me;
+  document.querySelectorAll('input[name="role"],input[name="access"]').forEach(i => i.disabled = !!self);
+  $("#fActive").disabled = !!self;
+  $("#uErr").textContent = self ? "This is your own account: your role, property access and status can only be changed by another admin." : "";
+  $("#uOk").disabled = false;
+  $("#userDlg").showModal(); setTimeout(() => $("#fName").focus(), 30);
+}
+$("#addUser").addEventListener("click", () => openUser(null));
+$("#genPass").addEventListener("click", () => { $("#fPass").value = genPassword(); });
+$("#uCancel").addEventListener("click", () => $("#userDlg").close());
+$("#fUser").addEventListener("input", e => { const v = e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""); if(v !== e.target.value) e.target.value = v; });
+$("#fName").addEventListener("input", e => {
+  if(editing || $("#fUser").dataset.touched) return;
+  const parts = e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z\s]/g, "").trim().split(/\s+/).filter(Boolean);
+  $("#fUser").value = parts.length > 1 ? (parts[0][0] + parts.slice(1).join("")).slice(0, 40) : (parts[0] || "");
+});
+$("#fUser").addEventListener("keydown", () => { $("#fUser").dataset.touched = "1"; });
+$("#userForm").addEventListener("submit", async e => {
+  e.preventDefault(); $("#uErr").textContent = "";
+  const name = $("#fName").value.trim(), username = $("#fUser").value.trim().toLowerCase();
+  const role = document.querySelector('input[name="role"]:checked').value;
+  const some = document.querySelector('input[name="access"]:checked').value === "some";
+  const props = some ? [...document.querySelectorAll("#propChecks input:checked")].map(i => i.value) : null;
+  if(!name){ $("#uErr").textContent = "Enter their full name."; $("#fName").focus(); return; }
+  if(!/^[a-z0-9._-]{2,40}$/.test(username)){ $("#uErr").textContent = "Usernames use 2–40 lowercase letters, numbers, dots, hyphens or underscores."; $("#fUser").focus(); return; }
+  if(some && !props.length){ $("#uErr").textContent = "Tick at least one property, or choose All properties."; return; }
+  const btn = $("#uOk"); btn.disabled = true;
+  if(!editing){
+    const email = $("#fEmail").value.trim(), password = $("#fPass").value;
+    if(email && !/^[^\s@,()]+@[^\s@,()]+\.[^\s@,()]+$/.test(email)){ $("#uErr").textContent = "Enter a valid email address, or leave it blank."; btn.disabled = false; return; }
+    if(password.length < 8){ $("#uErr").textContent = "The password needs at least 8 characters."; btn.disabled = false; return; }
+    btn.textContent = "Adding…";
+    const r = await call({ action:"create", name, username, email, password, role, properties: props, must_change_password: $("#fMust").checked });
+    btn.textContent = "Add user"; btn.disabled = false;
+    if(r.error){ $("#uErr").textContent = r.error; return; }
+    $("#userDlg").close();
+    showCreds("User added", [["Name", name], ["Username", username], ["Temporary password", password], ["Role", ROLE[role] + (props ? " · " + props.join(", ") : " · All properties")], ["Sign in at", SITE_URL]]);
+    load();
+  } else {
+    const self = editing.email === me;
+    const patch = { action:"update", email: editing.email, name, username };
+    if(!self){ patch.role = role; patch.properties = props; patch.active = $("#fActive").checked; }
+    const r = await call(patch); btn.disabled = false;
+    if(r.error){ $("#uErr").textContent = r.error; return; }
+    $("#userDlg").close(); toast("Changes saved"); load();
+  }
+});
+
+/* ---------- Reset password ---------- */
+let pwUser = null;
+$("#pGen").addEventListener("click", () => { $("#pPass").value = genPassword(); });
+$("#pCancel").addEventListener("click", () => $("#pwDlg").close());
+$("#pwForm").addEventListener("submit", async e => {
+  e.preventDefault(); const pw = $("#pPass").value;
+  if(pw.length < 8){ $("#pErr").textContent = "The password needs at least 8 characters."; return; }
+  $("#pOk").disabled = true;
+  const r = await call({ action:"reset_password", email: pwUser.email, password: pw, must_change_password: $("#pMust").checked });
+  $("#pOk").disabled = false;
+  if(r.error){ $("#pErr").textContent = r.error; return; }
+  $("#pwDlg").close();
+  showCreds("Password reset", [["Name", pwUser.name || pwUser.username], ["Username", pwUser.username], ["Temporary password", pw], ["Sign in at", SITE_URL]]);
+  load();
+});
+
+/* ---------- Credentials to share ---------- */
+let credText = "";
+function showCreds(title, rows){
+  $("#dTitle").textContent = title;
+  $("#credList").innerHTML = rows.map(([k, v]) => '<dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd>').join("");
+  credText = "Asset Register sign-in\n" + rows.map(([k, v]) => k + ": " + v).join("\n");
+  $("#doneDlg").showModal();
+}
+$("#copyCreds").addEventListener("click", async () => {
+  try{ await navigator.clipboard.writeText(credText); toast("Copied"); }
+  catch(e){ const r = document.createRange(); r.selectNodeContents($("#credList")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Selected. Press Ctrl+C to copy"); }
+});
+$("#dClose").addEventListener("click", () => { $("#doneDlg").close(); credText = ""; $("#credList").innerHTML = ""; });
+
+function confirmBox(title, msg, okLabel, danger){
+  return new Promise(res => {
+    const d = $("#confirmDlg"); $("#cfTitle").textContent = title; $("#cfMsg").textContent = msg;
+    $("#cfOk").textContent = okLabel; $("#cfOk").className = "btn " + (danger ? "danger" : "primary");
+    const done = v => { d.close(); off(); res(v); };
+    const ok = e => { e.preventDefault(); done(true); }, no = () => done(false), cancel = () => { off(); res(false); };
+    function off(){ $("#confirmForm").removeEventListener("submit", ok); $("#cfCancel").removeEventListener("click", no); d.removeEventListener("cancel", cancel); }
+    $("#confirmForm").addEventListener("submit", ok); $("#cfCancel").addEventListener("click", no); d.addEventListener("cancel", cancel);
+    d.showModal();
+  });
+}
+
+$("#ulist").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if(!b) return;
+  const email = b.dataset.edit || b.dataset.pw || b.dataset.toggle || b.dataset.del;
+  const u = users.find(x => x.email === email); if(!u) return;
+  if(b.dataset.edit){ openUser(u); return; }
+  if(b.dataset.pw){ pwUser = u; $("#pwLead").textContent = "Set a new temporary password for " + (u.name || u.username) + " (@" + u.username + ")."; $("#pPass").value = genPassword(); $("#pMust").checked = true; $("#pErr").textContent = ""; $("#pwDlg").showModal(); return; }
+  if(b.dataset.toggle){
+    const off = u.active;
+    if(off && !(await confirmBox("Disable " + (u.name || u.username) + "?", "They won’t be able to sign in or see anything until you enable the account again. Nothing is deleted.", "Disable", true))) return;
+    b.disabled = true; const r = await call({ action:"update", email, active: !off }); b.disabled = false;
+    if(r.error) toast(r.error); else { toast(off ? "Account disabled" : "Account enabled"); load(); }
+    return;
+  }
+  if(b.dataset.del){
+    if(!(await confirmBox("Delete " + (u.name || u.username) + "?", "Their sign-in is removed permanently. Assets and history they recorded stay. To block access temporarily, use Disable instead.", "Delete", true))) return;
+    b.disabled = true; const r = await call({ action:"delete", email }); b.disabled = false;
+    if(r.error) toast(r.error); else { toast("User deleted"); load(); }
+  }
+});
+
+/* ---------- Auth ---------- */
+let signingOut = false;
+const toLogin = reason => location.replace("login.html?return=users" + (reason ? "&reason=" + reason : ""));
+async function start(){
+  if(!window.supabase || typeof window.supabase.createClient !== "function"){ document.documentElement.classList.remove("booting"); banner("The sign-in service couldn’t load. Check your internet connection and reload the page."); return; }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const session = (await sb.auth.getSession()).data.session;
+  if(!session){ toLogin(); return; }
+  const ok = await sb.rpc("is_staff"); if(ok.error || !ok.data){ toLogin(); return; }
+  const prof = await sb.from("staff").select("username,role,must_change_password").eq("email", (session.user.email || "").toLowerCase()).maybeSingle();
+  if(prof.data && prof.data.must_change_password){ toLogin(); return; }
+  const role = (prof.data && prof.data.role) || "viewer";
+  $("#who").textContent = (prof.data && prof.data.username) || session.user.email;
+  if(window.Shell) Shell.setRole(role);
+  document.documentElement.classList.remove("booting");
+  sb.auth.onAuthStateChange((event, s) => { if(!s) setTimeout(() => toLogin(signingOut ? "signedout" : ""), 0); });
+  if(role !== "admin"){
+    $("#listCard").innerHTML = '<div class="empty"><b style="display:block;color:var(--ink);font-size:18px;margin-bottom:4px">Only administrators can manage users</b>Ask an admin if you need an account added or changed.</div>';
+    return;
+  }
+  $("#addUser").hidden = false;
+  const st = await sb.from("settings").select("data").eq("key","catalog").maybeSingle();
+  properties = ((st.data && st.data.data && st.data.data.properties) || []).map(p => p.name).sort((a,b) => a.localeCompare(b));
+  load();
+}
+$("#signOut").addEventListener("click", async () => { signingOut = true; await sb.auth.signOut(); toLogin("signedout"); });
+start();
+})();
+</script>
+</body>
+</html>

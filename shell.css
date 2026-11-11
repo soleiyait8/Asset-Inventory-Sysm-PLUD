@@ -50,6 +50,8 @@ html.sb-collapsed .sb-row{ flex-direction:column; }
 html.sb-collapsed .sb-collapse svg{ transform:rotate(180deg); }
 html.sb-collapsed .sb-signout .sb-text{ display:none; }
 
+.sidebar [hidden]{ display:none !important; }
+
 /* Mobile: top bar + slide-out panel */
 .sb-top, .sb-scrim{ display:none; }
 @media (max-width:900px){

@@ -90,3 +90,9 @@ alter table public.assets
   add column public_code text unique not null
   default substr(replace(gen_random_uuid()::text, '-', ''), 1, 16)
   check (public_code ~ '^[a-z0-9]{12,32}$');
+
+-- Roles and property access (see migration user_roles_and_property_access)
+-- staff.role in ('admin','editor','viewer'), staff.properties text[] (null = all), staff.active boolean
+-- Functions: is_staff(), is_admin(), can_edit(), can_see_property(text)
+-- Assets: read = can_see_property; insert/update = can_edit + can_see_property; delete = is_admin
+-- Settings: change = is_admin. Photos: upload/replace/delete = can_edit. Staff: own row or admin.

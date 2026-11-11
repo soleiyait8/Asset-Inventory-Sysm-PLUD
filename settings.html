@@ -392,12 +392,18 @@ async function start(){
   me = session.user;
   const ok = await sb.rpc("is_staff");
   if(ok.error || !ok.data){ toLogin(); return; }
-  const prof = await sb.from("staff").select("username,must_change_password").eq("email", (me.email || "").toLowerCase()).maybeSingle();
+  const prof = await sb.from("staff").select("username,must_change_password,role").eq("email", (me.email || "").toLowerCase()).maybeSingle();
   if(prof.data && prof.data.must_change_password){ toLogin(); return; }
   myName = (prof.data && prof.data.username) || me.email;
   $("#who").textContent = myName;
+  const myRole = (prof.data && prof.data.role) || "viewer";
+  if(window.Shell) Shell.setRole(myRole);
   document.documentElement.classList.remove("booting");
   sb.auth.onAuthStateChange((event, s) => { if(!s) setTimeout(() => toLogin(signingOut ? "signedout" : ""), 0); });
+  if(myRole !== "admin"){
+    document.querySelector(".wrap").innerHTML = '<h1>Settings</h1><p class="sub">Manage the properties and locations used across the asset register.</p><section class="card"><div class="empty"><b>Only administrators can change settings</b>Ask an admin if a property or location needs to be added or renamed.</div></section>';
+    return;
+  }
   await loadAll();
   let t = 0;
   sb.channel("settings-page")

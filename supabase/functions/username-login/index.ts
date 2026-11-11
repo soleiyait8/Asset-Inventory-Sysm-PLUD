@@ -32,17 +32,18 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
   const anon = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } });
 
-  async function emailFor(u: string): Promise<string | null> {
+  async function staffFor(u: string): Promise<{ email: string; active: boolean } | null> {
     if (!USERNAME_RE.test(u)) return null;
-    const { data } = await admin.from("staff").select("email").eq("username", u).maybeSingle();
-    return data?.email ?? null;
+    const { data } = await admin.from("staff").select("email,active").eq("username", u).maybeSingle();
+    return data ?? null;
   }
 
   if (action === "login") {
     const password = String(body.password ?? "");
-    const email = await emailFor(username);
-    if (!email || !password) { await pause(400); return json({ error: "invalid_credentials" }, 401); }
-    const { data, error } = await anon.auth.signInWithPassword({ email, password });
+    const st = await staffFor(username);
+    if (!st || !password) { await pause(400); return json({ error: "invalid_credentials" }, 401); }
+    const { data, error } = await anon.auth.signInWithPassword({ email: st.email, password });
+    if (!error && !st.active) return json({ error: "disabled" }, 403); // only revealed after a correct password
     if (error) {
       if (error.status === 429) return json({ error: "rate_limited" }, 429);
       if (/not confirmed/i.test(error.message)) return json({ error: "not_confirmed" }, 401);
@@ -53,7 +54,8 @@ Deno.serve(async (req) => {
 
   if (action === "reset") {
     const redirectTo = typeof body.redirectTo === "string" ? body.redirectTo : undefined;
-    const email = await emailFor(username);
+    const st = await staffFor(username);
+    const email = st && st.active && !st.email.endsWith("@example.com") ? st.email : null; // placeholder emails can’t receive mail
     if (email) {
       const { error } = await anon.auth.resetPasswordForEmail(email, { redirectTo });
       if (error && error.status === 429) return json({ error: "rate_limited" }, 429);

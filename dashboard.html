@@ -294,8 +294,9 @@ async function start(){
   me = session.user;
   const ok = await sb.rpc("is_staff");
   if(ok.error || !ok.data){ toLogin(); return; }
-  const prof = await sb.from("staff").select("username,must_change_password").eq("email", (me.email || "").toLowerCase()).maybeSingle();
+  const prof = await sb.from("staff").select("username,must_change_password,role").eq("email", (me.email || "").toLowerCase()).maybeSingle();
   if(prof.data && prof.data.must_change_password){ toLogin(); return; }
+  if(window.Shell) Shell.setRole((prof.data && prof.data.role) || "viewer");
   $("#who").textContent = (prof.data && prof.data.username) || me.email;
   document.documentElement.classList.remove("booting");
   sb.auth.onAuthStateChange((event, s) => { if(!s) setTimeout(() => toLogin(signingOut ? "signedout" : ""), 0); });

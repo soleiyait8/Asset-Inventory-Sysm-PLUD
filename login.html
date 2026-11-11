@@ -252,7 +252,7 @@ try{
 /* Where to go after sign-in: the app, optionally straight to a scanned asset */
 const next = new URLSearchParams(location.search).get("next") || "";
 const ret = new URLSearchParams(location.search).get("return");
-const APP_URL = /^Asset-\d+$/.test(next) ? "index.html" + (new URLSearchParams(location.search).has("scan") ? "?scan" : "") + "#" + next : ({ database:"database.html", register:"index.html", dashboard:"dashboard.html", settings:"settings.html" }[ret] || "dashboard.html");
+const APP_URL = /^Asset-\d+$/.test(next) ? "index.html" + (new URLSearchParams(location.search).has("scan") ? "?scan" : "") + "#" + next : ({ database:"database.html", register:"index.html", dashboard:"dashboard.html", settings:"settings.html", users:"users.html" }[ret] || "dashboard.html");
 const PAGE_URL = location.origin + location.pathname;
 
 function show(view){
@@ -326,6 +326,7 @@ $("#signinForm").addEventListener("submit", async e => {
     busy(btn, false);
     if(r.code === "invalid_credentials") notice("#signinNotice", "That username and password don’t match. Check them and try again.");
     else if(r.code === "not_confirmed") notice("#signinNotice", "This account hasn’t been confirmed yet. Ask your administrator to confirm it.");
+    else if(r.code === "disabled") notice("#signinNotice", "This account has been disabled. Contact your administrator.");
     else if(r.code === "rate_limited") notice("#signinNotice", "Too many attempts. Wait a minute, then try again.");
     else notice("#signinNotice", "Couldn’t reach the sign-in service. Check your connection and try again.");
     $("#password").select(); return;
