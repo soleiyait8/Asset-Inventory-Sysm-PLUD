@@ -75,3 +75,106 @@ html.sb-collapsed .sb-signout .sb-text{ display:none; }
 }
 @media print{ .sidebar, .sb-top, .sb-scrim{ display:none !important; } body{ padding:0 !important; } }
 @media (prefers-reduced-motion:reduce){ .sidebar, body{ transition:none !important; } }
+
+
+/* Enterprise UI refresh — shared visual system for every authenticated module */
+:root{
+  --sb-w:252px;
+  --sb-wc:76px;
+  --sb-bg:#111D32;
+  --sb-ink:#E7EEF9;
+  --sb-muted:#91A2BB;
+  --sb-hover:rgba(255,255,255,.075);
+  --sb-active:rgba(59,130,246,.18);
+  --sb-line:rgba(255,255,255,.09);
+  --sb-accent:#69A4FF;
+}
+body{
+  background:#F4F7FB;
+  color:#172338;
+  font-family:Inter,"Segoe UI",Arial,sans-serif;
+  font-size:14px;
+}
+.sidebar{
+  padding:22px 14px 16px;
+  box-shadow:8px 0 28px rgba(17,29,50,.08);
+}
+.sb-brand{padding:4px 8px 22px;margin-bottom:12px;gap:12px}
+.sb-mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(145deg,#EAF2FF,#BFD7FF);box-shadow:none}
+.sb-name b{font-size:17px;letter-spacing:-.03em}
+.sb-name small{font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.sb-label{padding:17px 12px 7px;font-size:10px;letter-spacing:.13em}
+.sb-item{height:44px;border-radius:10px;padding:0 13px;font-size:13px;gap:13px;color:#B7C4D8;transition:background .16s,color .16s}
+.sb-item svg{width:18px;height:18px}
+.sb-item:hover{background:var(--sb-hover);color:#fff}
+.sb-item[aria-current="page"]{background:var(--sb-active);color:#fff;font-weight:700}
+.sb-item[aria-current="page"]::before{left:-14px;top:9px;bottom:9px;width:3px;background:#69A4FF;border-radius:0 4px 4px 0}
+.sb-foot{padding-top:14px}
+.sb-avatar{background:#29466F;color:#DCEAFF}
+.sb-btn{border-radius:9px;height:38px;font-size:12px}
+.sb-top{background:#111D32}
+.sb-top-title{font-size:17px;letter-spacing:-.02em}
+.wrap{max-width:1580px;padding:30px 34px 58px}
+.top{align-items:center;margin-bottom:25px}
+h1{font-size:clamp(27px,2.4vw,36px);font-weight:750;letter-spacing:-.045em;line-height:1.12}
+.sub,.count{color:#728198;font-size:13px}
+.hello{color:#4778BD;font-size:13px;font-weight:700;letter-spacing:.01em}
+.btn{
+  min-height:40px;border-radius:10px;padding:0 15px;
+  border:1px solid #DCE4EF;background:#fff;color:#26364D;
+  font-size:13px;font-weight:650;box-shadow:0 1px 2px rgba(20,39,68,.035);
+  transition:transform .16s,box-shadow .16s,border-color .16s;
+}
+.btn:hover{border-color:#AFC4E3;box-shadow:0 5px 14px rgba(28,57,97,.08);transform:translateY(-1px)}
+.btn.primary{background:#2563EB;border-color:#2563EB;color:#fff;box-shadow:0 5px 12px rgba(37,99,235,.18)}
+.card,.panel,.box,.section,.kpi{
+  border-radius:15px;
+  box-shadow:0 2px 9px rgba(28,47,76,.045);
+}
+.card{border-color:#E2E9F2}
+input,select,textarea{
+  border-color:#DCE4EF;
+  border-radius:9px;
+  background:#fff;
+  color:#172338;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:#7EAAEF!important;
+  box-shadow:0 0 0 3px rgba(59,130,246,.12)!important;
+  outline:none;
+}
+table{border-collapse:separate;border-spacing:0;font-size:13px}
+th{
+  color:#718097;background:#F7F9FC;
+  border-bottom:1px solid #E4EAF2;
+  font-size:10px;letter-spacing:.09em;padding:12px 10px;
+}
+td{border-bottom:1px solid #EDF1F6;padding:13px 10px;color:#34445B}
+tbody tr:hover td{background:#F8FAFD}
+.filters{gap:10px;margin-bottom:17px}
+.filters input,.filters select{height:43px;border-radius:10px}
+.banner{border-radius:11px;padding:12px 15px}
+@media(max-width:900px){
+  .wrap{padding:23px 18px 44px}
+  .top{gap:14px}
+}
+@media(max-width:640px){
+  .wrap{padding:18px 13px 36px}
+  h1{font-size:28px}
+  .btn{min-height:39px;padding:0 11px;font-size:12px}
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --sb-bg:#0D1728;
+  }
+  body{background:#111A28;color:#E5ECF6}
+  input,select,textarea{background:#1B2738;color:#E5ECF6;border-color:#34445A}
+  th{background:#1B2738;color:#A8B7CC;border-color:#34445A}
+  td{color:#D0DAE8;border-color:#2A394D}
+  tbody tr:hover td{background:#1B2738}
+}
+:root[data-theme="dark"] body{background:#111A28;color:#E5ECF6}
+:root[data-theme="dark"] input,:root[data-theme="dark"] select,:root[data-theme="dark"] textarea{background:#1B2738;color:#E5ECF6;border-color:#34445A}
+:root[data-theme="dark"] th{background:#1B2738;color:#A8B7CC;border-color:#34445A}
+:root[data-theme="dark"] td{color:#D0DAE8;border-color:#2A394D}
+:root[data-theme="dark"] tbody tr:hover td{background:#1B2738}
