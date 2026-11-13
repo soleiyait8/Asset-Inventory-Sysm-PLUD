@@ -171,6 +171,97 @@ td a:hover{text-decoration:underline}
 .people .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 .people .nm small{display:block;font-weight:400;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis}
 .people .ct{font-weight:800;font-stretch:80%;font-size:18px;font-variant-numeric:tabular-nums}
+
+/* Dashboard refresh — visual-only layer; all existing data and interactions stay intact */
+.wrap{max-width:1480px;padding:30px 30px 64px}
+.top{align-items:center;margin-bottom:24px}
+.hello{font-size:14px;font-weight:700;letter-spacing:.01em;color:var(--accent)}
+h1{font-size:clamp(30px,3vw,40px);letter-spacing:-.045em;line-height:1.08;margin-top:5px}
+.sub{font-size:13px;margin-top:7px}
+.tools{gap:10px}
+select{border-radius:10px;min-width:190px;background:var(--surface);box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.btn{height:42px;border-radius:10px;padding:0 15px;box-shadow:0 1px 2px rgba(15,23,42,.04);transition:transform .15s,box-shadow .15s,border-color .15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(15,23,42,.08)}
+.btn.primary{box-shadow:0 4px 10px rgba(31,95,209,.18)}
+.kpis{gap:14px;margin-bottom:18px}
+.kpi{border:1px solid var(--line);border-radius:15px;padding:19px 18px 16px;min-height:142px;box-shadow:0 2px 8px rgba(28,36,48,.035);overflow:hidden}
+.kpi:before{content:"";position:absolute;inset:0 0 auto;height:4px;background:var(--accent)}
+.kpi:nth-child(1):before{background:#3B82F6}
+.kpi:nth-child(2):before{background:#8B5CF6}
+.kpi:nth-child(3):before{background:#0D9488}
+.kpi:nth-child(4):before{background:#D97706}
+.kpi:nth-child(5):before{background:#DC5B55}
+.kpi:nth-child(1){background:linear-gradient(145deg,rgba(59,130,246,.075),var(--surface) 65%)}
+.kpi:nth-child(2){background:linear-gradient(145deg,rgba(139,92,246,.075),var(--surface) 65%)}
+.kpi:nth-child(3){background:linear-gradient(145deg,rgba(13,148,136,.075),var(--surface) 65%)}
+.kpi:nth-child(4){background:linear-gradient(145deg,rgba(217,119,6,.075),var(--surface) 65%)}
+.kpi:nth-child(5){background:linear-gradient(145deg,rgba(220,91,85,.075),var(--surface) 65%)}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 9px 22px rgba(28,36,48,.08)}
+.kpi .k{font-size:13px;letter-spacing:.01em}
+.kpi .k svg{width:19px;height:19px;padding:3px;box-sizing:content-box;border-radius:8px;background:var(--surface-2)}
+.kpi:nth-child(1) .k svg{color:#3B82F6;background:rgba(59,130,246,.12)}
+.kpi:nth-child(2) .k svg{color:#8B5CF6;background:rgba(139,92,246,.12)}
+.kpi:nth-child(3) .k svg{color:#0D9488;background:rgba(13,148,136,.12)}
+.kpi:nth-child(4) .k svg{color:#D97706;background:rgba(217,119,6,.12)}
+.kpi:nth-child(5) .k svg{color:#DC5B55;background:rgba(220,91,85,.12)}
+.kpi .v{font-size:clamp(27px,2.5vw,34px);letter-spacing:-.04em;margin-top:11px}
+.kpi .n{font-size:12px;margin-top:5px}
+.kpi .meter{margin-top:12px}
+.kpi.alert{border-color:rgba(217,119,6,.35)}
+.grid{gap:16px}
+.card{border-radius:15px;padding:20px 21px;box-shadow:0 2px 8px rgba(28,36,48,.035);transition:box-shadow .18s,border-color .18s}
+.card:hover{box-shadow:0 6px 18px rgba(28,36,48,.055);border-color:color-mix(in srgb,var(--line) 65%,var(--accent) 35%)}
+.card h2{font-size:16px;letter-spacing:-.015em;margin-bottom:17px}
+.card h2 small{font-size:12px}
+.card h2 a{font-size:12px}
+.stack{height:13px;gap:3px;margin:2px 0 16px}
+.legend{gap:9px}
+.legend a{border-radius:10px;padding:11px 12px}
+.legend b{font-size:23px;margin-top:3px}
+.tabs{border-radius:10px}
+.tabs button{border-radius:8px;padding:6px 10px}
+.chart{height:205px;gap:8px;padding-top:28px}
+.chart .bar{max-width:48px;border-radius:7px 7px 3px 3px}
+.chart .lbl{font-size:11px}
+.chart-note{font-size:12px}
+.bars{gap:14px}
+.bar-row .row{font-size:13px}
+.bar-row .track{height:9px;border-radius:99px}
+table{font-size:13px}
+th{font-size:11px;letter-spacing:.06em;padding-bottom:10px}
+td{padding:13px 8px}
+.util .track{width:76px;height:7px}
+.list a{padding:12px 5px;grid-template-columns:78px minmax(0,1fr) auto;gap:5px 10px}
+.list .id{font-size:13px}
+.list .what{font-size:13px;font-weight:600}
+.list .what small{font-size:12px;font-weight:400}
+.list .when{font-size:12px}
+.tagw{padding:3px 9px;font-size:11px}
+.people a{padding:9px 5px}
+.people .av{width:36px;height:36px}
+.people .nm{font-size:13px}
+.people .ct{font-size:17px}
+.dq-score{gap:12px}
+.dq a{border-radius:9px;padding:10px 12px;font-size:13px}
+@media(max-width:900px){.wrap{padding:22px 18px 48px}.top{align-items:flex-start}}
+@media(max-width:640px){
+ .wrap{padding:18px 13px 40px}
+ .top{gap:14px;margin-bottom:18px}
+ .tools{width:100%}
+ .tools select{flex:1;min-width:0}
+ .btn{padding:0 11px;font-size:13px}
+ .kpis{gap:10px}
+ .kpi{min-height:132px;padding:16px 13px 13px;border-radius:12px}
+ .kpi .v{font-size:27px}
+ .card{padding:16px 14px;border-radius:12px}
+ .card h2{font-size:15px;flex-wrap:wrap}
+ .chart{height:175px;gap:4px}
+ .chart .lbl{font-size:10px}
+ .list a{grid-template-columns:65px minmax(0,1fr);gap:3px 8px}
+ .list .when,.list .tagw{grid-column:2;justify-self:start;text-align:left}
+}
+@media(prefers-reduced-motion:reduce){.kpi,.btn,.card{transition:none}}
+
 </style>
 </head>
 <body>
